@@ -1572,7 +1572,7 @@
             }
             
             try {
-                // Query ALL messages in current user's conversation with this partner
+                // Query messages from current user's conversation path: users/{currentUserId}/conversations/{partnerId}/messages
                 const messagesQuery = window.firebaseFirestore.query(
                     window.firebaseFirestore.collection(window.firebase.db, 'users', currentUser.uid, 'conversations', partnerId, 'messages'),
                     window.firebaseFirestore.orderBy('timestamp', 'asc')
@@ -1592,7 +1592,7 @@
                         return;
                     }
                     
-                    // Process all messages with proper alignment based on sender
+                    // Process all messages with proper left-right alignment based on senderId
                     snapshot.forEach((doc) => {
                         const messageData = doc.data();
                         const messageElement = createMessageElement(messageData);
@@ -1620,9 +1620,20 @@
         function createMessageElement(messageData) {
             const messageDiv = document.createElement('div');
             const isOwnMessage = messageData.senderId === currentUser.uid;
-            const timestamp = messageData.timestamp ? getTimeAgo(messageData.timestamp.toDate()) : 'Sending...';
             
-            // Proper alignment: right for own messages, left for others
+            // Handle timestamp - check if it's a Unix timestamp (number) or Firestore timestamp
+            let timestamp = 'Sending...';
+            if (messageData.timestamp) {
+                if (typeof messageData.timestamp === 'number') {
+                    // Unix timestamp in milliseconds
+                    timestamp = getTimeAgo(new Date(messageData.timestamp));
+                } else if (messageData.timestamp.toDate) {
+                    // Firestore timestamp
+                    timestamp = getTimeAgo(messageData.timestamp.toDate());
+                }
+            }
+            
+            // Facebook-style alignment: sent messages on right (blue), received on left (gray)
             messageDiv.className = `flex ${isOwnMessage ? 'justify-end' : 'justify-start'} chat-message mb-4`;
             
             messageDiv.innerHTML = `
@@ -1641,7 +1652,8 @@
             if (!messageText.trim() || !currentUser) return false;
             
             try {
-                const timestamp = window.firebaseFirestore.serverTimestamp();
+                // Use Unix timestamp in milliseconds for consistent sorting
+                const timestamp = Date.now();
                 const messageData = {
                     senderId: currentUser.uid,
                     receiverId: partnerId,
@@ -1650,13 +1662,13 @@
                     seen: false
                 };
                 
-                // Save message to sender's conversation (current user)
+                // Save message to sender's conversation path: users/{senderId}/conversations/{receiverId}/messages
                 await window.firebaseFirestore.addDoc(
                     window.firebaseFirestore.collection(window.firebase.db, 'users', currentUser.uid, 'conversations', partnerId, 'messages'),
                     messageData
                 );
                 
-                // Save message to receiver's conversation
+                // Save message to receiver's conversation path: users/{receiverId}/conversations/{senderId}/messages
                 await window.firebaseFirestore.addDoc(
                     window.firebaseFirestore.collection(window.firebase.db, 'users', partnerId, 'conversations', currentUser.uid, 'messages'),
                     messageData
@@ -1667,7 +1679,7 @@
                     window.firebaseFirestore.doc(window.firebase.db, 'users', currentUser.uid, 'conversations', partnerId),
                     {
                         lastMessage: messageText.trim(),
-                        lastUpdated: timestamp
+                        lastUpdated: window.firebaseFirestore.serverTimestamp()
                     }
                 );
                 
@@ -1679,7 +1691,7 @@
                     const currentUnreadCount = receiverConversationDoc.data().unreadCount || 0;
                     await window.firebaseFirestore.updateDoc(receiverConversationRef, {
                         lastMessage: messageText.trim(),
-                        lastUpdated: timestamp,
+                        lastUpdated: window.firebaseFirestore.serverTimestamp(),
                         unreadCount: currentUnreadCount + 1
                     });
                 }
@@ -2235,5 +2247,5 @@
             });
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'95e9570673a3d32f',t:'MTc1MjQxNTU3Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'95e9699d646ef305',t:'MTc1MjQxNjMzNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
