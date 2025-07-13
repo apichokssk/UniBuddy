@@ -83,6 +83,63 @@
             background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
             backdrop-filter: blur(10px);
         }
+        
+        /* Mobile Chat Styles */
+        .mobile-chat-container {
+            height: calc(100vh - 140px); /* Account for mobile nav */
+        }
+        
+        .mobile-messages-area {
+            height: calc(100vh - 240px); /* Account for header and input */
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+        
+        .desktop-messages-area {
+            height: calc(100vh - 300px);
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+        
+        /* Chat bubble animations */
+        .chat-bubble {
+            animation: bubbleIn 0.3s ease-out;
+        }
+        
+        @keyframes bubbleIn {
+            from { 
+                opacity: 0; 
+                transform: translateY(20px) scale(0.8); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0) scale(1); 
+            }
+        }
+        
+        /* Mobile view transitions */
+        .mobile-view-transition {
+            transition: transform 0.3s ease-in-out;
+        }
+        
+        /* Scrollbar styling */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 2px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 2px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -519,23 +576,91 @@
 
             <!-- MESSAGES PAGE -->
             <div id="messages-page" class="page">
-                <div class="max-w-6xl mx-auto px-4 py-6 h-screen flex flex-col">
-                    <!-- Desktop Header -->
-                    <div class="mb-6 hidden lg:block">
+                <!-- Desktop Layout -->
+                <div class="hidden md:block max-w-6xl mx-auto px-4 py-6 h-screen">
+                    <div class="mb-6">
                         <h1 class="text-2xl font-bold text-gray-800 mb-2">Messages</h1>
                         <p class="text-gray-600">Connect with your skill exchange partners</p>
                     </div>
 
-                    <!-- Mobile Header (Conversations) -->
-                    <div id="mobile-conversations-header" class="mb-4 lg:hidden">
-                        <h1 class="text-2xl font-bold text-gray-800 mb-2">Messages</h1>
-                        <p class="text-gray-600">Your conversations</p>
+                    <div class="grid grid-cols-3 gap-6 h-[calc(100vh-200px)]">
+                        <!-- Desktop Conversations List -->
+                        <div class="col-span-1 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col">
+                            <div class="p-4 border-b border-gray-200 flex-shrink-0">
+                                <h3 class="font-semibold text-gray-800">Conversations</h3>
+                            </div>
+                            <div id="desktop-chat-list" class="flex-1 overflow-y-auto custom-scrollbar">
+                                <div class="p-4 text-center text-gray-500">
+                                    <i class="fas fa-comments text-2xl mb-2"></i>
+                                    <p class="text-sm">No conversations yet</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Desktop Chat Window -->
+                        <div id="desktop-chat-panel" class="col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col">
+                            <div id="desktop-chat-header" class="p-4 border-b border-gray-200 hidden flex-shrink-0">
+                                <div class="flex items-center">
+                                    <div id="desktop-chat-user-avatar" class="w-10 h-10 bg-gradient-to-r from-uni-pink to-uni-purple rounded-full flex items-center justify-center text-white font-semibold">
+                                        U
+                                    </div>
+                                    <div class="ml-3">
+                                        <h3 id="desktop-chat-user-name" class="font-semibold text-gray-800">User Name</h3>
+                                        <p id="desktop-chat-user-faculty" class="text-sm text-gray-500">Faculty</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div id="desktop-chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar desktop-messages-area">
+                                <div class="text-center text-gray-500 py-8">
+                                    <i class="fas fa-comment text-4xl mb-4"></i>
+                                    <h3 class="text-lg font-semibold mb-2">Start a conversation</h3>
+                                    <p>Select a chat from the list or connect with someone from a post</p>
+                                </div>
+                            </div>
+                            
+                            <div id="desktop-chat-input-container" class="p-4 border-t border-gray-200 hidden flex-shrink-0">
+                                <form id="desktop-send-message-form" class="flex space-x-2">
+                                    <input type="file" id="desktop-image-input" accept="image/*" class="hidden">
+                                    <button type="button" id="desktop-attach-btn" class="bg-gray-100 text-gray-600 px-3 py-2 rounded-lg hover:bg-gray-200 transition-colors">
+                                        <i class="fas fa-paperclip"></i>
+                                    </button>
+                                    <input type="text" id="desktop-message-input" placeholder="Type your message..." 
+                                           class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uni-blue focus:border-transparent">
+                                    <button type="submit" class="bg-uni-blue text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mobile Layout -->
+                <div class="md:hidden mobile-chat-container">
+                    <!-- Mobile Conversations View -->
+                    <div id="mobile-conversations-view" class="h-full">
+                        <!-- Mobile Conversations Header -->
+                        <div class="bg-white border-b border-gray-200 p-4 flex-shrink-0">
+                            <h1 class="text-xl font-bold text-gray-800">Messages</h1>
+                            <p class="text-sm text-gray-600">Your conversations</p>
+                        </div>
+
+                        <!-- Mobile Conversations List -->
+                        <div id="mobile-chat-list" class="flex-1 bg-white overflow-y-auto custom-scrollbar" style="height: calc(100vh - 200px);">
+                            <div class="p-4 text-center text-gray-500">
+                                <i class="fas fa-comments text-2xl mb-2"></i>
+                                <p class="text-sm">No conversations yet</p>
+                                <p class="text-xs mt-1">Connect with someone from a post to start chatting!</p>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Mobile Header (Chat) -->
-                    <div id="mobile-chat-header" class="mb-4 lg:hidden hidden">
-                        <div class="flex items-center">
-                            <button id="back-to-conversations" class="mr-3 p-2 text-uni-blue hover:bg-blue-50 rounded-lg transition-colors">
+                    <!-- Mobile Chat View -->
+                    <div id="mobile-chat-view" class="h-full hidden">
+                        <!-- Mobile Chat Header -->
+                        <div class="bg-white border-b border-gray-200 p-4 flex items-center flex-shrink-0">
+                            <button id="mobile-back-btn" class="mr-3 p-2 text-uni-blue hover:bg-blue-50 rounded-lg transition-colors">
                                 <i class="fas fa-arrow-left text-lg"></i>
                             </button>
                             <div id="mobile-chat-user-avatar" class="w-10 h-10 bg-gradient-to-r from-uni-pink to-uni-purple rounded-full flex items-center justify-center text-white font-semibold">
@@ -546,82 +671,28 @@
                                 <p id="mobile-chat-user-faculty" class="text-sm text-gray-500">Faculty</p>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0">
-                        <!-- Chat List -->
-                        <div id="conversations-panel" class="lg:col-span-1 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col h-[calc(100vh-200px)] lg:h-[calc(100vh-200px)]">
-                            <div class="p-4 border-b border-gray-200 flex-shrink-0 hidden lg:block">
-                                <h3 class="font-semibold text-gray-800">Conversations</h3>
-                            </div>
-                            <div id="chat-list" class="flex-1 overflow-y-auto">
-                                <div class="p-4 text-center text-gray-500">
-                                    <i class="fas fa-comments text-2xl mb-2"></i>
-                                    <p class="text-sm">No conversations yet</p>
-                                </div>
+                        <!-- Mobile Messages Area -->
+                        <div id="mobile-chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 custom-scrollbar mobile-messages-area">
+                            <div class="text-center text-gray-500 py-8">
+                                <i class="fas fa-comment text-2xl mb-2"></i>
+                                <p>No messages yet. Start the conversation!</p>
                             </div>
                         </div>
 
-                        <!-- Chat Window -->
-                        <div id="chat-panel" class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 flex-col h-[calc(100vh-200px)] lg:h-[calc(100vh-200px)] hidden lg:flex">
-                            <div id="chat-header" class="p-4 border-b border-gray-200 hidden flex-shrink-0">
-                                <div class="flex items-center">
-                                    <div id="chat-user-avatar" class="w-10 h-10 bg-gradient-to-r from-uni-pink to-uni-purple rounded-full flex items-center justify-center text-white font-semibold">
-                                        U
-                                    </div>
-                                    <div class="ml-3">
-                                        <h3 id="chat-user-name" class="font-semibold text-gray-800">User Name</h3>
-                                        <p id="chat-user-faculty" class="text-sm text-gray-500">Faculty</p>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
-                                <div class="text-center text-gray-500 py-8">
-                                    <i class="fas fa-comment text-4xl mb-4"></i>
-                                    <h3 class="text-lg font-semibold mb-2">Start a conversation</h3>
-                                    <p>Select a chat from the list or connect with someone from a post</p>
-                                </div>
-                            </div>
-                            
-                            <div id="chat-input-container" class="p-4 border-t border-gray-200 hidden flex-shrink-0">
-                                <form id="send-message-form" class="flex space-x-2">
-                                    <input type="file" id="image-input" accept="image/*" class="hidden">
-                                    <button type="button" id="attach-btn" class="bg-gray-100 text-gray-600 px-3 py-2 rounded-lg hover:bg-gray-200 transition-colors">
-                                        <i class="fas fa-paperclip"></i>
-                                    </button>
-                                    <input type="text" id="message-input" placeholder="Type your message..." 
-                                           class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uni-blue focus:border-transparent">
-                                    <button type="submit" class="bg-uni-blue text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                                        <i class="fas fa-paper-plane"></i>
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-
-                        <!-- Mobile Chat Window -->
-                        <div id="mobile-chat-panel" class="lg:hidden bg-white rounded-xl shadow-sm border border-gray-100 flex-col h-[calc(100vh-200px)] hidden">
-                            <div id="mobile-chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
-                                <div class="text-center text-gray-500 py-8">
-                                    <i class="fas fa-comment text-4xl mb-4"></i>
-                                    <h3 class="text-lg font-semibold mb-2">Start a conversation</h3>
-                                    <p>Select a chat from the list or connect with someone from a post</p>
-                                </div>
-                            </div>
-                            
-                            <div id="mobile-chat-input-container" class="p-4 border-t border-gray-200 hidden flex-shrink-0">
-                                <form id="mobile-send-message-form" class="flex space-x-2">
-                                    <input type="file" id="mobile-image-input" accept="image/*" class="hidden">
-                                    <button type="button" id="mobile-attach-btn" class="bg-gray-100 text-gray-600 px-3 py-2 rounded-lg hover:bg-gray-200 transition-colors">
-                                        <i class="fas fa-paperclip"></i>
-                                    </button>
-                                    <input type="text" id="mobile-message-input" placeholder="Type your message..." 
-                                           class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uni-blue focus:border-transparent">
-                                    <button type="submit" class="bg-uni-blue text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                                        <i class="fas fa-paper-plane"></i>
-                                    </button>
-                                </form>
-                            </div>
+                        <!-- Mobile Input Area -->
+                        <div class="bg-white border-t border-gray-200 p-4 flex-shrink-0">
+                            <form id="mobile-send-message-form" class="flex space-x-2">
+                                <input type="file" id="mobile-image-input" accept="image/*" class="hidden">
+                                <button type="button" id="mobile-attach-btn" class="bg-gray-100 text-gray-600 px-3 py-2 rounded-lg hover:bg-gray-200 transition-colors">
+                                    <i class="fas fa-paperclip"></i>
+                                </button>
+                                <input type="text" id="mobile-message-input" placeholder="Type your message..." 
+                                       class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uni-blue focus:border-transparent">
+                                <button type="submit" class="bg-uni-blue text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -927,6 +998,7 @@
         let currentChatId = null;
         let chatListeners = new Map();
         let messageListener = null;
+        let isMobileView = false;
 
         // Initialize app
         document.addEventListener('DOMContentLoaded', function() {
@@ -934,46 +1006,25 @@
             initAuth();
             initNavigation();
             initForms();
-            initResponsiveHandlers();
+            initMobileChat();
+            checkMobileView();
         });
 
-        // Handle responsive behavior
-        function initResponsiveHandlers() {
-            // Handle window resize to switch between mobile and desktop views
-            window.addEventListener('resize', () => {
-                const isMobile = window.innerWidth < 1024;
-                
-                if (currentChatId) {
-                    // If a chat is open, adjust the view based on screen size
-                    if (isMobile) {
-                        // Switch to mobile chat view if not already
-                        if (!document.getElementById('mobile-chat-panel').classList.contains('flex')) {
-                            // Get current conversation data and switch to mobile view
-                            const chatUserName = document.getElementById('chat-user-name').textContent;
-                            const chatUserFaculty = document.getElementById('chat-user-faculty').textContent;
-                            const conversationData = {
-                                partnerName: chatUserName,
-                                partnerFaculty: chatUserFaculty
-                            };
-                            const initials = chatUserName ? chatUserName.split(' ').map(n => n[0]).join('').toUpperCase() : 'U';
-                            showMobileChatView(conversationData, initials);
-                        }
-                    } else {
-                        // Switch to desktop view if not already
-                        if (document.getElementById('mobile-chat-panel').classList.contains('flex')) {
-                            showMobileConversationsList();
-                            // Re-open chat in desktop view
-                            setTimeout(() => {
-                                if (currentChatId) {
-                                    openChat(currentChatId);
-                                }
-                            }, 100);
-                        }
-                    }
-                } else if (isMobile) {
-                    // Ensure mobile conversations view is shown when no chat is open
-                    showMobileConversationsList();
-                }
+        // Check if mobile view and set up responsive handlers
+        function checkMobileView() {
+            function updateMobileView() {
+                isMobileView = window.innerWidth < 768;
+            }
+            
+            updateMobileView();
+            window.addEventListener('resize', updateMobileView);
+        }
+
+        // Initialize mobile chat functionality
+        function initMobileChat() {
+            // Mobile back button
+            document.getElementById('mobile-back-btn').addEventListener('click', () => {
+                showMobileConversationsList();
             });
         }
 
@@ -1438,7 +1489,7 @@
             return `${Math.floor(diffInSeconds / 86400)}d ago`;
         }
 
-        // Messenger-style Chat System Functions
+        // Chat System Functions
         async function startChat(otherUserId) {
             if (!currentUser || otherUserId === currentUser.uid) return null;
             
@@ -1525,7 +1576,7 @@
             if (!currentUser) return;
             
             try {
-                // Query all conversations from current user's conversations subcollection (Inbox View)
+                // Query all conversations from current user's conversations subcollection
                 const conversationsQuery = window.firebaseFirestore.query(
                     window.firebaseFirestore.collection(window.firebase.db, 'users', currentUser.uid, 'conversations'),
                     window.firebaseFirestore.orderBy('lastUpdated', 'desc')
@@ -1536,25 +1587,32 @@
                 chatListeners.clear();
                 
                 const unsubscribe = window.firebaseFirestore.onSnapshot(conversationsQuery, (snapshot) => {
-                    const chatList = document.getElementById('chat-list');
+                    // Update both desktop and mobile chat lists
+                    const desktopChatList = document.getElementById('desktop-chat-list');
+                    const mobileChatList = document.getElementById('mobile-chat-list');
                     
                     if (snapshot.empty) {
-                        chatList.innerHTML = `
+                        const emptyState = `
                             <div class="p-4 text-center text-gray-500">
                                 <i class="fas fa-comments text-2xl mb-2"></i>
                                 <p class="text-sm">No conversations yet</p>
                                 <p class="text-xs mt-1">Connect with someone from a post to start chatting!</p>
                             </div>
                         `;
+                        desktopChatList.innerHTML = emptyState;
+                        mobileChatList.innerHTML = emptyState;
                         return;
                     }
                     
-                    chatList.innerHTML = '';
+                    desktopChatList.innerHTML = '';
+                    mobileChatList.innerHTML = '';
                     
                     snapshot.forEach((doc) => {
                         const conversationData = doc.data();
-                        const chatItem = createChatListItem(conversationData.partnerId, conversationData, conversationData);
-                        chatList.appendChild(chatItem);
+                        const desktopChatItem = createChatListItem(conversationData.partnerId, conversationData, conversationData, false);
+                        const mobileChatItem = createChatListItem(conversationData.partnerId, conversationData, conversationData, true);
+                        desktopChatList.appendChild(desktopChatItem);
+                        mobileChatList.appendChild(mobileChatItem);
                     });
                 });
                 
@@ -1564,7 +1622,7 @@
             }
         }
 
-        function createChatListItem(partnerId, conversationData, chatData) {
+        function createChatListItem(partnerId, conversationData, chatData, isMobile = false) {
             const chatItem = document.createElement('div');
             chatItem.className = 'p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors';
             chatItem.setAttribute('data-chat-id', partnerId);
@@ -1592,16 +1650,30 @@
                 </div>
             `;
             
-            chatItem.addEventListener('click', () => openChat(partnerId));
+            chatItem.addEventListener('click', () => {
+                if (isMobile) {
+                    openMobileChat(partnerId);
+                } else {
+                    openDesktopChat(partnerId);
+                }
+            });
             
             return chatItem;
         }
 
         async function openChat(partnerId) {
+            if (window.innerWidth < 768) {
+                await openMobileChat(partnerId);
+            } else {
+                await openDesktopChat(partnerId);
+            }
+        }
+
+        async function openMobileChat(partnerId) {
             currentChatId = partnerId;
             
             try {
-                // Get conversation data from current user's conversations
+                // Get conversation data
                 const conversationDoc = await window.firebaseFirestore.getDoc(
                     window.firebaseFirestore.doc(window.firebase.db, 'users', currentUser.uid, 'conversations', partnerId)
                 );
@@ -1611,51 +1683,68 @@
                 const conversationData = conversationDoc.data();
                 const initials = conversationData.partnerName ? conversationData.partnerName.split(' ').map(n => n[0]).join('').toUpperCase() : 'U';
                 
-                // Check if mobile view
-                const isMobile = window.innerWidth < 1024; // lg breakpoint
+                // Show mobile chat view
+                showMobileChatView(conversationData, initials);
                 
-                if (isMobile) {
-                    // Mobile: Switch to chat view
-                    showMobileChatView(conversationData, initials);
-                } else {
-                    // Desktop: Update desktop chat panel
-                    showDesktopChatView(conversationData, initials);
-                }
+                // Load messages
+                loadChatMessages(partnerId, true);
                 
-                // Load messages from current user's conversation with this partner
-                loadChatMessages(partnerId);
+                // Mark messages as read
+                await markMessagesAsRead(partnerId);
+                
+            } catch (error) {
+                console.error('Error opening mobile chat:', error);
+            }
+        }
+
+        async function openDesktopChat(partnerId) {
+            currentChatId = partnerId;
+            
+            try {
+                // Get conversation data
+                const conversationDoc = await window.firebaseFirestore.getDoc(
+                    window.firebaseFirestore.doc(window.firebase.db, 'users', currentUser.uid, 'conversations', partnerId)
+                );
+                
+                if (!conversationDoc.exists()) return;
+                
+                const conversationData = conversationDoc.data();
+                const initials = conversationData.partnerName ? conversationData.partnerName.split(' ').map(n => n[0]).join('').toUpperCase() : 'U';
+                
+                // Show desktop chat view
+                showDesktopChatView(conversationData, initials);
+                
+                // Load messages
+                loadChatMessages(partnerId, false);
                 
                 // Mark messages as read
                 await markMessagesAsRead(partnerId);
                 
                 // Update active chat in list
-                document.querySelectorAll('[data-chat-id]').forEach(item => {
+                document.querySelectorAll('#desktop-chat-list [data-chat-id]').forEach(item => {
                     item.classList.remove('bg-uni-blue', 'text-white');
                     item.classList.add('hover:bg-gray-50');
                 });
                 
-                const activeItem = document.querySelector(`[data-chat-id="${partnerId}"]`);
+                const activeItem = document.querySelector(`#desktop-chat-list [data-chat-id="${partnerId}"]`);
                 if (activeItem) {
                     activeItem.classList.add('bg-uni-blue', 'text-white');
                     activeItem.classList.remove('hover:bg-gray-50');
                 }
+                
             } catch (error) {
-                console.error('Error opening conversation:', error);
+                console.error('Error opening desktop chat:', error);
             }
         }
 
         function showMobileChatView(conversationData, initials) {
-            // Hide conversations panel and header
-            document.getElementById('conversations-panel').classList.add('hidden');
-            document.getElementById('mobile-conversations-header').classList.add('hidden');
+            // Hide conversations view
+            document.getElementById('mobile-conversations-view').classList.add('hidden');
             
-            // Show mobile chat panel and header
-            document.getElementById('mobile-chat-panel').classList.remove('hidden');
-            document.getElementById('mobile-chat-panel').classList.add('flex');
-            document.getElementById('mobile-chat-header').classList.remove('hidden');
-            document.getElementById('mobile-chat-input-container').classList.remove('hidden');
+            // Show chat view
+            document.getElementById('mobile-chat-view').classList.remove('hidden');
             
-            // Update mobile chat header
+            // Update chat header
             const mobileAvatar = document.getElementById('mobile-chat-user-avatar');
             if (conversationData.partnerImage) {
                 mobileAvatar.style.backgroundImage = `url(${conversationData.partnerImage})`;
@@ -1673,8 +1762,8 @@
 
         function showDesktopChatView(conversationData, initials) {
             // Update desktop chat header
-            const chatHeader = document.getElementById('chat-header');
-            const chatUserAvatar = document.getElementById('chat-user-avatar');
+            const chatHeader = document.getElementById('desktop-chat-header');
+            const chatUserAvatar = document.getElementById('desktop-chat-user-avatar');
             
             if (conversationData.partnerImage) {
                 chatUserAvatar.style.backgroundImage = `url(${conversationData.partnerImage})`;
@@ -1686,23 +1775,19 @@
                 chatUserAvatar.textContent = initials;
             }
             
-            document.getElementById('chat-user-name').textContent = conversationData.partnerName;
-            document.getElementById('chat-user-faculty').textContent = conversationData.partnerFaculty;
+            document.getElementById('desktop-chat-user-name').textContent = conversationData.partnerName;
+            document.getElementById('desktop-chat-user-faculty').textContent = conversationData.partnerFaculty;
             
             chatHeader.classList.remove('hidden');
-            document.getElementById('chat-input-container').classList.remove('hidden');
+            document.getElementById('desktop-chat-input-container').classList.remove('hidden');
         }
 
         function showMobileConversationsList() {
-            // Hide mobile chat panel and header
-            document.getElementById('mobile-chat-panel').classList.add('hidden');
-            document.getElementById('mobile-chat-panel').classList.remove('flex');
-            document.getElementById('mobile-chat-header').classList.add('hidden');
-            document.getElementById('mobile-chat-input-container').classList.add('hidden');
+            // Hide chat view
+            document.getElementById('mobile-chat-view').classList.add('hidden');
             
-            // Show conversations panel and header
-            document.getElementById('conversations-panel').classList.remove('hidden');
-            document.getElementById('mobile-conversations-header').classList.remove('hidden');
+            // Show conversations view
+            document.getElementById('mobile-conversations-view').classList.remove('hidden');
             
             // Clear current chat
             currentChatId = null;
@@ -1718,866 +1803,4 @@
             try {
                 // Reset unread count for this conversation
                 await window.firebaseFirestore.updateDoc(
-                    window.firebaseFirestore.doc(window.firebase.db, 'users', currentUser.uid, 'conversations', partnerId),
-                    {
-                        unreadCount: 0
-                    }
-                );
-            } catch (error) {
-                console.error('Error marking messages as read:', error);
-            }
-        }
-
-        function loadChatMessages(partnerId) {
-            // Clean up existing message listener
-            if (messageListener) {
-                messageListener();
-                messageListener = null;
-            }
-            
-            try {
-                // Query messages from current user's conversation path: users/{currentUserId}/conversations/{partnerId}/messages
-                const messagesQuery = window.firebaseFirestore.query(
-                    window.firebaseFirestore.collection(window.firebase.db, 'users', currentUser.uid, 'conversations', partnerId, 'messages'),
-                    window.firebaseFirestore.orderBy('timestamp', 'asc')
-                );
-                
-                messageListener = window.firebaseFirestore.onSnapshot(messagesQuery, (snapshot) => {
-                    // Determine which messages container to use based on screen size
-                    const isMobile = window.innerWidth < 1024;
-                    const messagesContainer = isMobile ? 
-                        document.getElementById('mobile-chat-messages') : 
-                        document.getElementById('chat-messages');
-                    
-                    messagesContainer.innerHTML = '';
-                    
-                    if (snapshot.empty) {
-                        messagesContainer.innerHTML = `
-                            <div class="text-center text-gray-500 py-8">
-                                <i class="fas fa-comment text-2xl mb-2"></i>
-                                <p>No messages yet. Start the conversation!</p>
-                            </div>
-                        `;
-                        return;
-                    }
-                    
-                    // Process all messages with proper left-right alignment based on senderId
-                    snapshot.forEach((doc) => {
-                        const messageData = doc.data();
-                        const messageElement = createMessageElement(messageData);
-                        messagesContainer.appendChild(messageElement);
-                    });
-                    
-                    // Scroll to bottom to show latest messages
-                    setTimeout(() => {
-                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                    }, 100);
-                });
-            } catch (error) {
-                console.error('Error loading messages:', error);
-                // Show fallback message if Firebase fails
-                const isMobile = window.innerWidth < 1024;
-                const messagesContainer = isMobile ? 
-                    document.getElementById('mobile-chat-messages') : 
-                    document.getElementById('chat-messages');
-                    
-                messagesContainer.innerHTML = `
-                    <div class="text-center text-gray-500 py-8">
-                        <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
-                        <p>Unable to load messages. Please try again.</p>
-                    </div>
-                `;
-            }
-        }
-
-        function createMessageElement(messageData) {
-            const messageDiv = document.createElement('div');
-            const isOwnMessage = messageData.senderId === currentUser.uid;
-            
-            // Handle timestamp - check if it's a Unix timestamp (number) or Firestore timestamp
-            let timestamp = 'Sending...';
-            if (messageData.timestamp) {
-                if (typeof messageData.timestamp === 'number') {
-                    // Unix timestamp in milliseconds
-                    timestamp = getTimeAgo(new Date(messageData.timestamp));
-                } else if (messageData.timestamp.toDate) {
-                    // Firestore timestamp
-                    timestamp = getTimeAgo(messageData.timestamp.toDate());
-                }
-            }
-            
-            // Facebook-style alignment: sent messages on right (blue), received on left (gray)
-            messageDiv.className = `flex ${isOwnMessage ? 'justify-end' : 'justify-start'} chat-message mb-4`;
-            
-            // Create message content based on whether it has image or text
-            let messageContent = '';
-            
-            if (messageData.imageUrl) {
-                messageContent = `
-                    <div class="${isOwnMessage ? 'bg-uni-blue text-white ml-auto' : 'bg-gray-200 text-gray-800 mr-auto'} rounded-lg p-2 inline-block">
-                        <img src="${messageData.imageUrl}" alt="Shared image" class="rounded-md max-w-[300px] max-h-[300px] object-cover cursor-pointer" onclick="openImageModal('${messageData.imageUrl}')">
-                        ${messageData.text ? `<p class="text-sm break-words mt-2">${messageData.text}</p>` : ''}
-                    </div>
-                `;
-            } else {
-                messageContent = `
-                    <div class="${isOwnMessage ? 'bg-uni-blue text-white ml-auto' : 'bg-gray-200 text-gray-800 mr-auto'} rounded-lg px-4 py-2 inline-block">
-                        <p class="text-sm break-words">${messageData.text}</p>
-                    </div>
-                `;
-            }
-            
-            messageDiv.innerHTML = `
-                <div class="max-w-xs lg:max-w-md ${isOwnMessage ? 'text-right' : 'text-left'}">
-                    ${messageContent}
-                    <p class="text-xs text-gray-500 mt-1 ${isOwnMessage ? 'text-right' : 'text-left'}">${timestamp}</p>
-                </div>
-            `;
-            
-            return messageDiv;
-        }
-
-        async function sendMessage(partnerId, messageText, imageUrl = null) {
-            if ((!messageText.trim() && !imageUrl) || !currentUser) return false;
-            
-            try {
-                // Use Unix timestamp in milliseconds for consistent sorting
-                const timestamp = Date.now();
-                const messageData = {
-                    senderId: currentUser.uid,
-                    receiverId: partnerId,
-                    text: messageText.trim(),
-                    timestamp: timestamp,
-                    seen: false
-                };
-                
-                // Add image URL if provided
-                if (imageUrl) {
-                    messageData.imageUrl = imageUrl;
-                }
-                
-                // Save message to sender's conversation path: users/{senderId}/conversations/{receiverId}/messages
-                await window.firebaseFirestore.addDoc(
-                    window.firebaseFirestore.collection(window.firebase.db, 'users', currentUser.uid, 'conversations', partnerId, 'messages'),
-                    messageData
-                );
-                
-                // Save message to receiver's conversation path: users/{receiverId}/conversations/{senderId}/messages
-                await window.firebaseFirestore.addDoc(
-                    window.firebaseFirestore.collection(window.firebase.db, 'users', partnerId, 'conversations', currentUser.uid, 'messages'),
-                    messageData
-                );
-                
-                // Determine last message preview
-                const lastMessagePreview = imageUrl ? (messageText.trim() ? `📷 ${messageText.trim()}` : '📷 Image') : messageText.trim();
-                
-                // Update last message in sender's conversation
-                await window.firebaseFirestore.updateDoc(
-                    window.firebaseFirestore.doc(window.firebase.db, 'users', currentUser.uid, 'conversations', partnerId),
-                    {
-                        lastMessage: lastMessagePreview,
-                        lastUpdated: window.firebaseFirestore.serverTimestamp()
-                    }
-                );
-                
-                // Update last message in receiver's conversation and increment unread count
-                const receiverConversationRef = window.firebaseFirestore.doc(window.firebase.db, 'users', partnerId, 'conversations', currentUser.uid);
-                const receiverConversationDoc = await window.firebaseFirestore.getDoc(receiverConversationRef);
-                
-                if (receiverConversationDoc.exists()) {
-                    const currentUnreadCount = receiverConversationDoc.data().unreadCount || 0;
-                    await window.firebaseFirestore.updateDoc(receiverConversationRef, {
-                        lastMessage: lastMessagePreview,
-                        lastUpdated: window.firebaseFirestore.serverTimestamp(),
-                        unreadCount: currentUnreadCount + 1
-                    });
-                }
-                
-                return true;
-            } catch (error) {
-                console.error('Error sending message:', error);
-                return false;
-            }
-        }
-
-        async function uploadImageToFirebase(file) {
-            try {
-                // Create a unique filename
-                const timestamp = Date.now();
-                const fileName = `chat-images/${currentUser.uid}_${timestamp}_${file.name}`;
-                
-                // Create storage reference
-                const storageRef = window.firebaseStorage.ref(window.firebase.storage, fileName);
-                
-                // Upload file
-                await window.firebaseStorage.uploadBytes(storageRef, file);
-                
-                // Get download URL
-                const downloadURL = await window.firebaseStorage.getDownloadURL(storageRef);
-                
-                return downloadURL;
-            } catch (error) {
-                console.error('Error uploading image:', error);
-                throw error;
-            }
-        }
-
-        // Image modal function
-        function openImageModal(imageUrl) {
-            document.getElementById('modal-image').src = imageUrl;
-            document.getElementById('image-modal').classList.remove('hidden');
-            document.getElementById('image-modal').classList.add('flex');
-        }
-
-        // Create post function
-        async function createPost(postData) {
-            try {
-                const userDoc = await window.firebaseFirestore.getDoc(window.firebaseFirestore.doc(window.firebase.db, 'users', currentUser.uid));
-                const userData = userDoc.data();
-                
-                const newPost = {
-                    ...postData,
-                    userId: currentUser.uid,
-                    author: userData.name,
-                    authorFaculty: userData.faculty,
-                    authorInitials: userData.name.split(' ').map(n => n[0]).join('').toUpperCase(),
-                    authorImage: userData.profileImage || null,
-                    createdAt: window.firebaseFirestore.serverTimestamp(),
-                    likes: 0,
-                    comments: 0
-                };
-                
-                await window.firebaseFirestore.addDoc(window.firebaseFirestore.collection(window.firebase.db, 'posts'), newPost);
-                return true;
-            } catch (error) {
-                console.error('Error creating post:', error);
-                return false;
-            }
-        }
-
-        // Load user's posts
-        async function loadMyPosts() {
-            if (!currentUser) {
-                displayMyPosts();
-                return;
-            }
-            
-            try {
-                const postsQuery = window.firebaseFirestore.query(
-                    window.firebaseFirestore.collection(window.firebase.db, 'posts'),
-                    window.firebaseFirestore.where('userId', '==', currentUser.uid),
-                    window.firebaseFirestore.orderBy('createdAt', 'desc')
-                );
-                const querySnapshot = await window.firebaseFirestore.getDocs(postsQuery);
-                
-                userPosts = [];
-                querySnapshot.forEach((doc) => {
-                    userPosts.push({ id: doc.id, ...doc.data() });
-                });
-                
-                displayMyPosts();
-            } catch (error) {
-                console.error('Error loading user posts:', error);
-                // Show empty state if Firebase fails
-                userPosts = [];
-                displayMyPosts();
-            }
-        }
-
-        function displayMyPosts() {
-            const container = document.getElementById('my-posts-container');
-            
-            if (userPosts.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-8">
-                        <i class="fas fa-plus-circle text-4xl text-gray-300 mb-4"></i>
-                        <h3 class="text-lg font-semibold text-gray-600 mb-2">No posts yet</h3>
-                        <p class="text-gray-500">Create your first post to get started!</p>
-                        <button data-page="create" class="nav-trigger mt-4 bg-uni-blue text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                            Create Post
-                        </button>
-                    </div>
-                `;
-                return;
-            }
-            
-            container.innerHTML = '';
-            userPosts.forEach(post => {
-                const postDiv = document.createElement('div');
-                postDiv.className = 'bg-white rounded-xl shadow-sm border border-gray-100 p-6';
-                
-                const typeClass = post.type === 'need' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600';
-                const timeAgo = post.createdAt ? getTimeAgo(post.createdAt.toDate ? post.createdAt.toDate() : post.createdAt) : 'Just now';
-                
-                postDiv.innerHTML = `
-                    <div class="flex justify-between items-start mb-4">
-                        <div class="flex items-center space-x-2">
-                            <span class="${typeClass} px-3 py-1 rounded-full text-sm font-medium">${post.type === 'need' ? 'Need Help' : 'Offering Help'}</span>
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <button class="edit-post-btn text-uni-blue hover:text-blue-700 text-sm font-medium" data-post-id="${post.id}">Edit</button>
-                            <button class="delete-post-btn text-red-600 hover:text-red-700 text-sm font-medium" data-post-id="${post.id}">Delete</button>
-                        </div>
-                    </div>
-                    
-                    <h3 class="text-lg font-semibold text-gray-800 mb-2">${post.title}</h3>
-                    <p class="text-gray-600 mb-4">${post.description}</p>
-                    
-                    ${post.tags && post.tags.length > 0 ? `
-                        <div class="flex flex-wrap gap-2 mb-4">
-                            ${post.tags.map(tag => `<span class="skill-tag text-white px-3 py-1 rounded-full text-sm">${tag}</span>`).join('')}
-                        </div>
-                    ` : ''}
-                    
-                    <div class="flex justify-between items-center text-sm text-gray-500">
-                        <span>Created ${timeAgo}</span>
-                        <div class="flex items-center space-x-4">
-                            <span><i class="fas fa-heart mr-1"></i>${post.likes || 0}</span>
-                            <span><i class="fas fa-comment mr-1"></i>${post.comments || 0}</span>
-                        </div>
-                    </div>
-                `;
-                
-                // Add edit functionality
-                const editBtn = postDiv.querySelector('.edit-post-btn');
-                editBtn.addEventListener('click', () => {
-                    openEditPostModal(post);
-                });
-                
-                // Add delete functionality
-                const deleteBtn = postDiv.querySelector('.delete-post-btn');
-                deleteBtn.addEventListener('click', async () => {
-                    if (confirm('Are you sure you want to delete this post?')) {
-                        try {
-                            await window.firebaseFirestore.deleteDoc(window.firebaseFirestore.doc(window.firebase.db, 'posts', post.id));
-                            loadMyPosts();
-                            loadAllPosts();
-                        } catch (error) {
-                            console.error('Error deleting post:', error);
-                            alert('Error deleting post. Please try again.');
-                        }
-                    }
-                });
-                
-                container.appendChild(postDiv);
-            });
-        }
-
-        // Edit post functions
-        function openEditPostModal(post) {
-            document.getElementById('edit-post-id').value = post.id;
-            document.getElementById('edit-post-title').value = post.title;
-            document.getElementById('edit-post-description').value = post.description;
-            document.getElementById('edit-post-skills').value = post.tags ? post.tags.join(', ') : '';
-            document.getElementById('edit-post-exchange').value = post.exchange || '';
-            
-            // Set post type
-            const typeRadio = document.querySelector(`input[name="edit-post-type"][value="${post.type}"]`);
-            if (typeRadio) {
-                typeRadio.checked = true;
-            }
-            
-            document.getElementById('edit-post-modal').classList.remove('hidden');
-            document.getElementById('edit-post-modal').classList.add('flex');
-        }
-
-        async function updatePost(postId, updatedData) {
-            try {
-                await window.firebaseFirestore.updateDoc(
-                    window.firebaseFirestore.doc(window.firebase.db, 'posts', postId),
-                    {
-                        ...updatedData,
-                        updatedAt: window.firebaseFirestore.serverTimestamp()
-                    }
-                );
-                return true;
-            } catch (error) {
-                console.error('Error updating post:', error);
-                return false;
-            }
-        }
-
-        // Search functionality
-        function performSearch() {
-            const searchTerm = document.getElementById('search-input').value.toLowerCase();
-            const category = document.getElementById('category-filter').value;
-            const tagsFilter = document.getElementById('tags-filter').value.toLowerCase();
-            const sort = document.getElementById('sort-filter').value;
-            
-            let filteredPosts = allPosts.filter(post => {
-                const matchesSearch = !searchTerm || 
-                    post.title.toLowerCase().includes(searchTerm) ||
-                    post.description.toLowerCase().includes(searchTerm) ||
-                    (post.tags && post.tags.some(tag => tag.toLowerCase().includes(searchTerm)));
-                
-                const matchesCategory = !category || post.type === category;
-                
-                const matchesTags = !tagsFilter || 
-                    (post.tags && post.tags.some(tag => tag.toLowerCase().includes(tagsFilter)));
-                
-                return matchesSearch && matchesCategory && matchesTags;
-            });
-            
-            // Sort results
-            if (sort === 'oldest') {
-                filteredPosts.sort((a, b) => a.createdAt - b.createdAt);
-            } else {
-                filteredPosts.sort((a, b) => b.createdAt - a.createdAt);
-            }
-            
-            const resultsContainer = document.getElementById('search-results');
-            
-            if (filteredPosts.length === 0) {
-                resultsContainer.innerHTML = `
-                    <div class="text-center py-12">
-                        <i class="fas fa-search text-4xl text-gray-300 mb-4"></i>
-                        <h3 class="text-lg font-semibold text-gray-600 mb-2">No results found</h3>
-                        <p class="text-gray-500">Try adjusting your search criteria</p>
-                    </div>
-                `;
-            } else {
-                resultsContainer.innerHTML = '';
-                filteredPosts.forEach(post => {
-                    const postElement = createPostElement(post);
-                    resultsContainer.appendChild(postElement);
-                });
-            }
-        }
-
-        // Navigation functionality
-        function initNavigation() {
-            // Desktop navigation
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const targetPage = this.getAttribute('data-page');
-                    showPage(targetPage);
-                    updateActiveNav(this);
-                });
-            });
-
-            // Mobile navigation
-            document.querySelectorAll('.mobile-nav').forEach(item => {
-                item.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const targetPage = this.getAttribute('data-page');
-                    showPage(targetPage);
-                    updateActiveMobileNav(this);
-                });
-            });
-
-            // Navigation triggers
-            document.addEventListener('click', function(e) {
-                if (e.target.classList.contains('nav-trigger') || e.target.closest('.nav-trigger')) {
-                    e.preventDefault();
-                    const trigger = e.target.classList.contains('nav-trigger') ? e.target : e.target.closest('.nav-trigger');
-                    const targetPage = trigger.getAttribute('data-page');
-                    showPage(targetPage);
-                }
-            });
-        }
-
-        function showPage(pageId) {
-            // Hide all pages
-            document.querySelectorAll('.page').forEach(page => {
-                page.classList.remove('active');
-            });
-            
-            // Show target page
-            const targetPage = document.getElementById(pageId + '-page');
-            if (targetPage) {
-                targetPage.classList.add('active');
-                
-                // Load page-specific content
-                switch(pageId) {
-                    case 'home':
-                        loadAllPosts();
-                        break;
-                    case 'explore':
-                        // Search functionality is already initialized
-                        break;
-                    case 'myposts':
-                        loadMyPosts();
-                        break;
-                    case 'messages':
-                        loadChatList();
-                        break;
-                    case 'profile':
-                        loadUserProfile();
-                        break;
-                }
-            }
-        }
-
-        function updateActiveNav(activeItem) {
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.classList.remove('active', 'bg-gradient-to-r', 'from-uni-blue', 'to-uni-purple', 'text-white');
-                item.classList.add('text-gray-600');
-            });
-            
-            activeItem.classList.add('active', 'bg-gradient-to-r', 'from-uni-blue', 'to-uni-purple', 'text-white');
-            activeItem.classList.remove('text-gray-600');
-        }
-
-        function updateActiveMobileNav(activeItem) {
-            document.querySelectorAll('.mobile-nav').forEach(item => {
-                item.classList.remove('text-uni-blue');
-                item.classList.add('text-gray-500');
-            });
-            
-            activeItem.classList.add('text-uni-blue');
-            activeItem.classList.remove('text-gray-500');
-        }
-
-        // Form handling
-        function initForms() {
-            // Create post form
-            document.getElementById('create-post-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                showLoading();
-                
-                const formData = {
-                    type: document.querySelector('input[name="post-type"]:checked').value,
-                    title: document.getElementById('post-title').value,
-                    description: document.getElementById('post-description').value,
-                    tags: document.getElementById('post-skills').value.split(',').map(s => s.trim()).filter(s => s),
-                    exchange: document.getElementById('post-exchange').value
-                };
-                
-                const success = await createPost(formData);
-                hideLoading();
-                
-                if (success) {
-                    alert('Post created successfully!');
-                    document.getElementById('create-post-form').reset();
-                    showPage('home');
-                    loadAllPosts();
-                } else {
-                    alert('Error creating post. Please try again.');
-                }
-            });
-
-            // Profile image upload handlers
-            let currentProfileImage = null;
-            
-            document.getElementById('upload-image-btn').addEventListener('click', () => {
-                document.getElementById('profile-image-input').click();
-            });
-            
-            document.getElementById('edit-profile-preview').addEventListener('click', () => {
-                document.getElementById('profile-image-input').click();
-            });
-            
-            document.getElementById('profile-image-input').addEventListener('change', async (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    if (file.size > 5 * 1024 * 1024) { // 5MB limit
-                        alert('Image size should be less than 5MB');
-                        return;
-                    }
-                    
-                    try {
-                        showLoading();
-                        const resizedImage = await resizeImage(file);
-                        currentProfileImage = resizedImage;
-                        
-                        // Update preview
-                        const preview = document.getElementById('edit-profile-preview');
-                        preview.style.backgroundImage = `url(${resizedImage})`;
-                        preview.style.backgroundSize = 'cover';
-                        preview.style.backgroundPosition = 'center';
-                        preview.textContent = '';
-                        
-                        // Show remove button
-                        document.getElementById('remove-image-btn').classList.remove('hidden');
-                        document.getElementById('remove-image-btn').classList.add('flex');
-                        
-                        hideLoading();
-                    } catch (error) {
-                        hideLoading();
-                        console.error('Error processing image:', error);
-                        alert('Error processing image. Please try again.');
-                    }
-                }
-            });
-            
-            document.getElementById('remove-image-btn').addEventListener('click', () => {
-                currentProfileImage = null;
-                const preview = document.getElementById('edit-profile-preview');
-                preview.style.backgroundImage = '';
-                preview.textContent = 'U';
-                document.getElementById('remove-image-btn').classList.add('hidden');
-                document.getElementById('remove-image-btn').classList.remove('flex');
-                document.getElementById('profile-image-input').value = '';
-            });
-
-            // Edit profile form
-            document.getElementById('edit-profile-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                showLoading();
-                
-                const updatedData = {
-                    name: document.getElementById('edit-name').value,
-                    faculty: document.getElementById('edit-faculty').value,
-                    bio: document.getElementById('edit-bio').value,
-                    skills: document.getElementById('edit-skills').value.split(',').map(s => s.trim()).filter(s => s),
-                    phone: document.getElementById('edit-phone').value,
-                    yearOfStudy: document.getElementById('edit-year').value
-                };
-                
-                // Add profile image if uploaded
-                if (currentProfileImage !== null) {
-                    updatedData.profileImage = currentProfileImage;
-                }
-                
-                try {
-                    await window.firebaseFirestore.updateDoc(window.firebaseFirestore.doc(window.firebase.db, 'users', currentUser.uid), updatedData);
-                    hideLoading();
-                    document.getElementById('edit-profile-modal').classList.add('hidden');
-                    document.getElementById('edit-profile-modal').classList.remove('flex');
-                    loadUserProfile();
-                    alert('Profile updated successfully!');
-                } catch (error) {
-                    hideLoading();
-                    console.error('Error updating profile:', error);
-                    alert('Error updating profile. Please try again.');
-                }
-            });
-
-            // Edit post form
-            document.getElementById('edit-post-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                showLoading();
-                
-                const postId = document.getElementById('edit-post-id').value;
-                const updatedData = {
-                    type: document.querySelector('input[name="edit-post-type"]:checked').value,
-                    title: document.getElementById('edit-post-title').value,
-                    description: document.getElementById('edit-post-description').value,
-                    tags: document.getElementById('edit-post-skills').value.split(',').map(s => s.trim()).filter(s => s),
-                    exchange: document.getElementById('edit-post-exchange').value
-                };
-                
-                const success = await updatePost(postId, updatedData);
-                hideLoading();
-                
-                if (success) {
-                    document.getElementById('edit-post-modal').classList.add('hidden');
-                    document.getElementById('edit-post-modal').classList.remove('flex');
-                    loadMyPosts();
-                    loadAllPosts();
-                    alert('Post updated successfully!');
-                } else {
-                    alert('Error updating post. Please try again.');
-                }
-            });
-
-            // Edit post modal close
-            document.getElementById('close-edit-post-modal').addEventListener('click', () => {
-                document.getElementById('edit-post-modal').classList.add('hidden');
-                document.getElementById('edit-post-modal').classList.remove('flex');
-            });
-
-            // Edit profile modal
-            document.getElementById('edit-profile-btn').addEventListener('click', async () => {
-                try {
-                    const userDoc = await window.firebaseFirestore.getDoc(window.firebaseFirestore.doc(window.firebase.db, 'users', currentUser.uid));
-                    if (userDoc.exists()) {
-                        const userData = userDoc.data();
-                        document.getElementById('edit-name').value = userData.name || '';
-                        document.getElementById('edit-faculty').value = userData.faculty || '';
-                        document.getElementById('edit-bio').value = userData.bio || '';
-                        document.getElementById('edit-skills').value = userData.skills ? userData.skills.join(', ') : '';
-                        document.getElementById('edit-phone').value = userData.phone || '';
-                        document.getElementById('edit-year').value = userData.yearOfStudy || '';
-                        
-                        // Set profile image preview
-                        const preview = document.getElementById('edit-profile-preview');
-                        if (userData.profileImage) {
-                            preview.style.backgroundImage = `url(${userData.profileImage})`;
-                            preview.style.backgroundSize = 'cover';
-                            preview.style.backgroundPosition = 'center';
-                            preview.textContent = '';
-                            document.getElementById('remove-image-btn').classList.remove('hidden');
-                            document.getElementById('remove-image-btn').classList.add('flex');
-                            currentProfileImage = userData.profileImage;
-                        } else {
-                            preview.style.backgroundImage = '';
-                            preview.textContent = userData.name ? userData.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'U';
-                            document.getElementById('remove-image-btn').classList.add('hidden');
-                            document.getElementById('remove-image-btn').classList.remove('flex');
-                            currentProfileImage = null;
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error loading profile for edit:', error);
-                }
-                
-                document.getElementById('edit-profile-modal').classList.remove('hidden');
-                document.getElementById('edit-profile-modal').classList.add('flex');
-            });
-
-            document.getElementById('close-edit-modal').addEventListener('click', () => {
-                document.getElementById('edit-profile-modal').classList.add('hidden');
-                document.getElementById('edit-profile-modal').classList.remove('flex');
-            });
-
-            // Search functionality
-            document.getElementById('search-btn').addEventListener('click', performSearch);
-            document.getElementById('search-input').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    performSearch();
-                }
-            });
-
-            // Back to conversations button
-            document.getElementById('back-to-conversations').addEventListener('click', () => {
-                showMobileConversationsList();
-            });
-
-            // Desktop send message form
-            document.getElementById('send-message-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                
-                if (!currentChatId) return;
-                
-                const messageInput = document.getElementById('message-input');
-                const messageText = messageInput.value.trim();
-                
-                if (!messageText) return;
-                
-                // Clear input immediately for better UX
-                messageInput.value = '';
-                
-                const success = await sendMessage(currentChatId, messageText);
-                if (!success) {
-                    // Restore message if sending failed
-                    messageInput.value = messageText;
-                    alert('Failed to send message. Please try again.');
-                }
-            });
-
-            // Mobile send message form
-            document.getElementById('mobile-send-message-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                
-                if (!currentChatId) return;
-                
-                const messageInput = document.getElementById('mobile-message-input');
-                const messageText = messageInput.value.trim();
-                
-                if (!messageText) return;
-                
-                // Clear input immediately for better UX
-                messageInput.value = '';
-                
-                const success = await sendMessage(currentChatId, messageText);
-                if (!success) {
-                    // Restore message if sending failed
-                    messageInput.value = messageText;
-                    alert('Failed to send message. Please try again.');
-                }
-            });
-
-            // Desktop image attachment handler
-            document.getElementById('attach-btn').addEventListener('click', () => {
-                document.getElementById('image-input').click();
-            });
-
-            // Mobile image attachment handler
-            document.getElementById('mobile-attach-btn').addEventListener('click', () => {
-                document.getElementById('mobile-image-input').click();
-            });
-
-            // Desktop image upload handler
-            document.getElementById('image-input').addEventListener('change', async (e) => {
-                await handleImageUpload(e, 'message-input');
-            });
-
-            // Mobile image upload handler
-            document.getElementById('mobile-image-input').addEventListener('change', async (e) => {
-                await handleImageUpload(e, 'mobile-message-input');
-            });
-
-            // Shared image upload function
-            async function handleImageUpload(e, inputId) {
-                const file = e.target.files[0];
-                if (!file || !currentChatId) return;
-
-                // Validate file type
-                if (!file.type.startsWith('image/')) {
-                    alert('Please select an image file.');
-                    return;
-                }
-
-                // Validate file size (5MB limit)
-                if (file.size > 5 * 1024 * 1024) {
-                    alert('Image size should be less than 5MB.');
-                    return;
-                }
-
-                try {
-                    showLoading();
-                    
-                    // Upload image to Firebase Storage
-                    const imageUrl = await uploadImageToFirebase(file);
-                    
-                    // Get any text message to send with the image
-                    const messageInput = document.getElementById(inputId);
-                    const messageText = messageInput.value.trim();
-                    
-                    // Send message with image
-                    const success = await sendMessage(currentChatId, messageText, imageUrl);
-                    
-                    if (success) {
-                        messageInput.value = '';
-                        e.target.value = ''; // Clear file input
-                    } else {
-                        alert('Failed to send image. Please try again.');
-                    }
-                    
-                    hideLoading();
-                } catch (error) {
-                    hideLoading();
-                    console.error('Error sending image:', error);
-                    alert('Failed to upload image. Please try again.');
-                }
-            }
-
-            // Image modal handlers
-            document.getElementById('close-image-modal').addEventListener('click', () => {
-                document.getElementById('image-modal').classList.add('hidden');
-                document.getElementById('image-modal').classList.remove('flex');
-            });
-
-            // Close modal when clicking outside the image
-            document.getElementById('image-modal').addEventListener('click', (e) => {
-                if (e.target === e.currentTarget) {
-                    document.getElementById('image-modal').classList.add('hidden');
-                    document.getElementById('image-modal').classList.remove('flex');
-                }
-            });
-
-            // Home page filters
-            document.getElementById('apply-filters').addEventListener('click', () => {
-                const typeFilter = document.getElementById('home-type-filter').value;
-                const sortFilter = document.getElementById('home-sort-filter').value;
-                
-                let filteredPosts = [...allPosts];
-                
-                if (typeFilter) {
-                    filteredPosts = filteredPosts.filter(post => post.type === typeFilter);
-                }
-                
-                if (sortFilter === 'popular') {
-                    filteredPosts.sort((a, b) => (b.likes || 0) - (a.likes || 0));
-                } else {
-                    filteredPosts.sort((a, b) => b.createdAt - a.createdAt);
-                }
-                
-                displayPosts(filteredPosts);
-            });
-        }
-    </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'95e990eb65cfa62b',t:'MTc1MjQxNzk0Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
-</html>
+                    window.firebaseFirestore.doc(window.firebase.db, 'users', currentUser.uid, <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'95e99fdbd2e73e68',t:'MTc1MjQxODU1OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
