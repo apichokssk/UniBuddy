@@ -519,16 +519,58 @@
 
             <!-- MESSAGES PAGE -->
             <div id="messages-page" class="page">
-                <div class="max-w-6xl mx-auto px-4 py-6">
+                <div class="max-w-6xl mx-auto px-4 py-6 h-screen flex flex-col">
                     <div class="mb-6">
                         <h1 class="text-2xl font-bold text-gray-800 mb-2">Messages</h1>
                         <p class="text-gray-600">Connect with your skill exchange partners</p>
                     </div>
 
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
-                        <i class="fas fa-comments text-4xl text-gray-300 mb-4"></i>
-                        <h3 class="text-lg font-semibold text-gray-600 mb-2">Messages Coming Soon</h3>
-                        <p class="text-gray-500">Real-time messaging will be available in the next update</p>
+                    <div class="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0">
+                        <!-- Chat List -->
+                        <div class="lg:col-span-1 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col">
+                            <div class="p-4 border-b border-gray-200">
+                                <h3 class="font-semibold text-gray-800">Conversations</h3>
+                            </div>
+                            <div id="chat-list" class="flex-1 overflow-y-auto">
+                                <div class="p-4 text-center text-gray-500">
+                                    <i class="fas fa-comments text-2xl mb-2"></i>
+                                    <p class="text-sm">No conversations yet</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Chat Window -->
+                        <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col">
+                            <div id="chat-header" class="p-4 border-b border-gray-200 hidden">
+                                <div class="flex items-center">
+                                    <div id="chat-user-avatar" class="w-10 h-10 bg-gradient-to-r from-uni-pink to-uni-purple rounded-full flex items-center justify-center text-white font-semibold">
+                                        U
+                                    </div>
+                                    <div class="ml-3">
+                                        <h3 id="chat-user-name" class="font-semibold text-gray-800">User Name</h3>
+                                        <p id="chat-user-faculty" class="text-sm text-gray-500">Faculty</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4">
+                                <div class="text-center text-gray-500 py-8">
+                                    <i class="fas fa-comment text-4xl mb-4"></i>
+                                    <h3 class="text-lg font-semibold mb-2">Start a conversation</h3>
+                                    <p>Select a chat from the list or connect with someone from a post</p>
+                                </div>
+                            </div>
+                            
+                            <div id="chat-input-container" class="p-4 border-t border-gray-200 hidden">
+                                <form id="send-message-form" class="flex space-x-2">
+                                    <input type="text" id="message-input" placeholder="Type your message..." 
+                                           class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uni-blue focus:border-transparent">
+                                    <button type="submit" class="bg-uni-blue text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -553,12 +595,14 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <h1 id="profile-name" class="text-2xl font-bold text-gray-800 mb-2">Loading...</h1>
-                                    <p id="profile-faculty" class="text-gray-600 mb-4">Student</p>
+                                    <p id="profile-faculty" class="text-gray-600 mb-1">Student</p>
+                                    <p id="profile-year" class="text-sm text-gray-500 mb-4">Year of Study</p>
                                     <p id="profile-bio" class="text-gray-700 mb-4">Loading profile...</p>
                                     
                                     <div class="mb-4">
                                         <h3 class="font-semibold text-gray-800 mb-2">Contact Info</h3>
-                                        <p id="profile-email" class="text-sm text-gray-600"><i class="fas fa-envelope mr-2"></i>Loading...</p>
+                                        <p id="profile-email" class="text-sm text-gray-600 mb-1"><i class="fas fa-envelope mr-2"></i>Loading...</p>
+                                        <p id="profile-phone" class="text-sm text-gray-600"><i class="fas fa-phone mr-2"></i>Not provided</p>
                                     </div>
                                 </div>
                                 
@@ -679,7 +723,7 @@
 
     <!-- Edit Profile Modal -->
     <div id="edit-profile-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center">
-        <div class="bg-white rounded-xl p-6 w-full max-w-md mx-4">
+        <div class="bg-white rounded-xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-semibold text-gray-800">Edit Profile</h3>
                 <button id="close-edit-modal" class="text-gray-400 hover:text-gray-600">
@@ -688,21 +732,55 @@
             </div>
             
             <form id="edit-profile-form" class="space-y-4">
+                <!-- Profile Image Upload -->
+                <div class="text-center">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Profile Picture</label>
+                    <div class="relative inline-block">
+                        <div id="edit-profile-preview" class="w-24 h-24 bg-gradient-to-r from-uni-pink to-uni-purple rounded-full flex items-center justify-center text-white font-bold text-2xl border-4 border-gray-200 cursor-pointer hover:border-uni-blue transition-colors">
+                            U
+                        </div>
+                        <input type="file" id="profile-image-input" accept="image/*" class="hidden">
+                        <button type="button" id="upload-image-btn" class="absolute -bottom-2 -right-2 w-8 h-8 bg-uni-blue text-white rounded-full hover:bg-blue-700 transition-colors flex items-center justify-center">
+                            <i class="fas fa-camera text-sm"></i>
+                        </button>
+                        <button type="button" id="remove-image-btn" class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors items-center justify-center text-xs hidden">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2">Click the camera icon to upload a photo</p>
+                </div>
+
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Name</label>
-                    <input type="text" id="edit-name" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uni-blue focus:border-transparent">
+                    <input type="text" id="edit-name" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uni-blue focus:border-transparent">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Faculty/Major</label>
-                    <input type="text" id="edit-faculty" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uni-blue focus:border-transparent">
+                    <input type="text" id="edit-faculty" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uni-blue focus:border-transparent">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Bio</label>
-                    <textarea id="edit-bio" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uni-blue focus:border-transparent"></textarea>
+                    <textarea id="edit-bio" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uni-blue focus:border-transparent" placeholder="Tell others about yourself..."></textarea>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Skills (comma separated)</label>
                     <input type="text" id="edit-skills" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uni-blue focus:border-transparent" placeholder="JavaScript, Python, Design">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number (optional)</label>
+                    <input type="tel" id="edit-phone" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uni-blue focus:border-transparent" placeholder="+1 (555) 123-4567">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Year of Study</label>
+                    <select id="edit-year" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uni-blue focus:border-transparent">
+                        <option value="">Select Year</option>
+                        <option value="1st Year">1st Year</option>
+                        <option value="2nd Year">2nd Year</option>
+                        <option value="3rd Year">3rd Year</option>
+                        <option value="4th Year">4th Year</option>
+                        <option value="Graduate">Graduate</option>
+                        <option value="PhD">PhD</option>
+                    </select>
                 </div>
                 <button type="submit" class="w-full bg-uni-blue text-white py-2 rounded-lg hover:bg-blue-700 transition-colors">
                     Save Changes
@@ -716,6 +794,9 @@
         let currentUser = null;
         let allPosts = [];
         let userPosts = [];
+        let currentChatId = null;
+        let chatListeners = new Map();
+        let messageListener = null;
 
         // Initialize app
         document.addEventListener('DOMContentLoaded', function() {
@@ -890,16 +971,36 @@
         function updateUserUI(userData) {
             // Update navigation user info
             const initials = userData.name.split(' ').map(n => n[0]).join('').toUpperCase();
-            document.getElementById('user-avatar').textContent = initials;
+            const userAvatar = document.getElementById('user-avatar');
+            const profileAvatar = document.getElementById('profile-avatar');
+            
+            if (userData.profileImage) {
+                userAvatar.style.backgroundImage = `url(${userData.profileImage})`;
+                userAvatar.style.backgroundSize = 'cover';
+                userAvatar.style.backgroundPosition = 'center';
+                userAvatar.textContent = '';
+                
+                profileAvatar.style.backgroundImage = `url(${userData.profileImage})`;
+                profileAvatar.style.backgroundSize = 'cover';
+                profileAvatar.style.backgroundPosition = 'center';
+                profileAvatar.textContent = '';
+            } else {
+                userAvatar.style.backgroundImage = '';
+                userAvatar.textContent = initials;
+                profileAvatar.style.backgroundImage = '';
+                profileAvatar.textContent = initials;
+            }
+            
             document.getElementById('user-name').textContent = userData.name;
             document.getElementById('user-faculty').textContent = userData.faculty;
 
             // Update profile page
-            document.getElementById('profile-avatar').textContent = initials;
             document.getElementById('profile-name').textContent = userData.name;
             document.getElementById('profile-faculty').textContent = userData.faculty;
+            document.getElementById('profile-year').textContent = userData.yearOfStudy || 'Year not specified';
             document.getElementById('profile-bio').textContent = userData.bio || 'No bio available';
             document.getElementById('profile-email').innerHTML = `<i class="fas fa-envelope mr-2"></i>${userData.email}`;
+            document.getElementById('profile-phone').innerHTML = `<i class="fas fa-phone mr-2"></i>${userData.phone || 'Not provided'}`;
             
             // Update skills
             const skillsContainer = document.getElementById('profile-skills');
@@ -918,6 +1019,51 @@
             document.getElementById('dashboard-connections').textContent = userData.connections || 0;
             document.getElementById('dashboard-views').textContent = userData.profileViews || 0;
             document.getElementById('dashboard-points').textContent = userData.helpPoints || 0;
+        }
+
+        // Image handling functions
+        function convertImageToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function resizeImage(file, maxWidth = 300, maxHeight = 300, quality = 0.8) {
+            return new Promise((resolve) => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const img = new Image();
+                
+                img.onload = () => {
+                    // Calculate new dimensions
+                    let { width, height } = img;
+                    
+                    if (width > height) {
+                        if (width > maxWidth) {
+                            height = (height * maxWidth) / width;
+                            width = maxWidth;
+                        }
+                    } else {
+                        if (height > maxHeight) {
+                            width = (width * maxHeight) / height;
+                            height = maxHeight;
+                        }
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    
+                    // Draw and compress
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+                    resolve(compressedDataUrl);
+                };
+                
+                img.src = URL.createObjectURL(file);
+            });
         }
 
         // Posts functions
@@ -1013,8 +1159,8 @@
             postDiv.innerHTML = `
                 <div class="p-6">
                     <div class="flex items-center mb-4">
-                        <div class="w-12 h-12 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
-                            ${post.authorInitials || post.author?.charAt(0) || 'U'}
+                        <div class="w-12 h-12 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold overflow-hidden" style="${post.authorImage ? `background-image: url(${post.authorImage}); background-size: cover; background-position: center;` : ''}">
+                            ${post.authorImage ? '' : (post.authorInitials || post.author?.charAt(0) || 'U')}
                         </div>
                         <div class="ml-3">
                             <h3 class="font-semibold text-gray-800">${post.author || 'Anonymous'}</h3>
@@ -1081,21 +1227,30 @@
             
             const connectBtn = postDiv.querySelector('.connect-btn');
             if (connectBtn) {
-                connectBtn.addEventListener('click', function() {
+                connectBtn.addEventListener('click', async function() {
                     const originalText = this.textContent;
                     this.textContent = 'Connecting...';
                     this.disabled = true;
                     
-                    setTimeout(() => {
-                        this.textContent = 'Message Sent!';
-                        this.className = 'connect-btn bg-green-500 text-white px-6 py-2 rounded-lg';
-                        
-                        setTimeout(() => {
-                            this.textContent = originalText;
-                            this.disabled = false;
-                            this.className = `connect-btn ${post.type === 'need' ? 'bg-uni-blue hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700'} text-white px-6 py-2 rounded-lg transition-colors`;
-                        }, 2000);
-                    }, 1000);
+                    try {
+                        // Start a chat with the post author
+                        const chatId = await startChat(post.userId);
+                        if (chatId) {
+                            // Switch to messages page and open the chat
+                            showPage('messages');
+                            setTimeout(() => openChat(chatId), 500);
+                            
+                            this.textContent = 'Chat Started!';
+                            this.className = 'connect-btn bg-green-500 text-white px-6 py-2 rounded-lg';
+                        } else {
+                            throw new Error('Failed to start chat');
+                        }
+                    } catch (error) {
+                        console.error('Error starting chat:', error);
+                        this.textContent = 'Try Again';
+                        this.className = `connect-btn ${post.type === 'need' ? 'bg-uni-blue hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700'} text-white px-6 py-2 rounded-lg transition-colors`;
+                        this.disabled = false;
+                    }
                 });
             }
             
@@ -1112,6 +1267,297 @@
             return `${Math.floor(diffInSeconds / 86400)}d ago`;
         }
 
+        // Chat System Functions
+        async function startChat(otherUserId) {
+            if (!currentUser || otherUserId === currentUser.uid) return null;
+            
+            try {
+                // Check if chat already exists
+                const existingChatId = await findExistingChat(otherUserId);
+                if (existingChatId) {
+                    return existingChatId;
+                }
+                
+                // Create new chat
+                const chatData = {
+                    participants: [currentUser.uid, otherUserId].sort(),
+                    lastMessage: '',
+                    lastUpdated: window.firebaseFirestore.serverTimestamp(),
+                    createdAt: window.firebaseFirestore.serverTimestamp()
+                };
+                
+                const chatRef = await window.firebaseFirestore.addDoc(
+                    window.firebaseFirestore.collection(window.firebase.db, 'chats'), 
+                    chatData
+                );
+                
+                return chatRef.id;
+            } catch (error) {
+                console.error('Error starting chat:', error);
+                return null;
+            }
+        }
+
+        async function findExistingChat(otherUserId) {
+            try {
+                const participants = [currentUser.uid, otherUserId].sort();
+                const chatsQuery = window.firebaseFirestore.query(
+                    window.firebaseFirestore.collection(window.firebase.db, 'chats'),
+                    window.firebaseFirestore.where('participants', '==', participants)
+                );
+                
+                const querySnapshot = await window.firebaseFirestore.getDocs(chatsQuery);
+                
+                if (!querySnapshot.empty) {
+                    return querySnapshot.docs[0].id;
+                }
+                
+                return null;
+            } catch (error) {
+                console.error('Error finding existing chat:', error);
+                return null;
+            }
+        }
+
+        async function loadChatList() {
+            if (!currentUser) return;
+            
+            try {
+                const chatsQuery = window.firebaseFirestore.query(
+                    window.firebaseFirestore.collection(window.firebase.db, 'chats'),
+                    window.firebaseFirestore.where('participants', 'array-contains', currentUser.uid),
+                    window.firebaseFirestore.orderBy('lastUpdated', 'desc')
+                );
+                
+                // Clean up existing listeners
+                chatListeners.forEach(unsubscribe => unsubscribe());
+                chatListeners.clear();
+                
+                const unsubscribe = window.firebaseFirestore.onSnapshot(chatsQuery, async (snapshot) => {
+                    const chatList = document.getElementById('chat-list');
+                    
+                    if (snapshot.empty) {
+                        chatList.innerHTML = `
+                            <div class="p-4 text-center text-gray-500">
+                                <i class="fas fa-comments text-2xl mb-2"></i>
+                                <p class="text-sm">No conversations yet</p>
+                                <p class="text-xs mt-1">Connect with someone from a post to start chatting!</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    chatList.innerHTML = '';
+                    
+                    for (const doc of snapshot.docs) {
+                        const chatData = doc.data();
+                        const otherUserId = chatData.participants.find(id => id !== currentUser.uid);
+                        
+                        // Get other user's info
+                        try {
+                            const otherUserDoc = await window.firebaseFirestore.getDoc(
+                                window.firebaseFirestore.doc(window.firebase.db, 'users', otherUserId)
+                            );
+                            
+                            if (otherUserDoc.exists()) {
+                                const otherUserData = otherUserDoc.data();
+                                const chatItem = createChatListItem(doc.id, otherUserData, chatData);
+                                chatList.appendChild(chatItem);
+                            }
+                        } catch (error) {
+                            console.error('Error loading user data for chat:', error);
+                        }
+                    }
+                });
+                
+                chatListeners.set('main', unsubscribe);
+            } catch (error) {
+                console.error('Error loading chat list:', error);
+            }
+        }
+
+        function createChatListItem(chatId, otherUserData, chatData) {
+            const chatItem = document.createElement('div');
+            chatItem.className = 'p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors';
+            chatItem.setAttribute('data-chat-id', chatId);
+            
+            const initials = otherUserData.name ? otherUserData.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'U';
+            const lastMessageTime = chatData.lastUpdated ? getTimeAgo(chatData.lastUpdated.toDate()) : '';
+            
+            chatItem.innerHTML = `
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-gradient-to-r from-uni-pink to-uni-purple rounded-full flex items-center justify-center text-white font-semibold overflow-hidden" style="${otherUserData.profileImage ? `background-image: url(${otherUserData.profileImage}); background-size: cover; background-position: center;` : ''}">
+                        ${otherUserData.profileImage ? '' : initials}
+                    </div>
+                    <div class="ml-3 flex-1 min-w-0">
+                        <div class="flex justify-between items-start">
+                            <h4 class="font-semibold text-gray-800 truncate">${otherUserData.name}</h4>
+                            <span class="text-xs text-gray-500 ml-2">${lastMessageTime}</span>
+                        </div>
+                        <p class="text-sm text-gray-600 truncate">${chatData.lastMessage || 'Start a conversation...'}</p>
+                        <p class="text-xs text-gray-400">${otherUserData.faculty}</p>
+                    </div>
+                </div>
+            `;
+            
+            chatItem.addEventListener('click', () => openChat(chatId));
+            
+            return chatItem;
+        }
+
+        async function openChat(chatId) {
+            currentChatId = chatId;
+            
+            try {
+                // Get chat data
+                const chatDoc = await window.firebaseFirestore.getDoc(
+                    window.firebaseFirestore.doc(window.firebase.db, 'chats', chatId)
+                );
+                
+                if (!chatDoc.exists()) return;
+                
+                const chatData = chatDoc.data();
+                const otherUserId = chatData.participants.find(id => id !== currentUser.uid);
+                
+                // Get other user's info
+                const otherUserDoc = await window.firebaseFirestore.getDoc(
+                    window.firebaseFirestore.doc(window.firebase.db, 'users', otherUserId)
+                );
+                
+                if (otherUserDoc.exists()) {
+                    const otherUserData = otherUserDoc.data();
+                    
+                    // Update chat header
+                    const chatHeader = document.getElementById('chat-header');
+                    const chatUserAvatar = document.getElementById('chat-user-avatar');
+                    const initials = otherUserData.name ? otherUserData.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'U';
+                    
+                    if (otherUserData.profileImage) {
+                        chatUserAvatar.style.backgroundImage = `url(${otherUserData.profileImage})`;
+                        chatUserAvatar.style.backgroundSize = 'cover';
+                        chatUserAvatar.style.backgroundPosition = 'center';
+                        chatUserAvatar.textContent = '';
+                    } else {
+                        chatUserAvatar.style.backgroundImage = '';
+                        chatUserAvatar.textContent = initials;
+                    }
+                    
+                    document.getElementById('chat-user-name').textContent = otherUserData.name;
+                    document.getElementById('chat-user-faculty').textContent = otherUserData.faculty;
+                    
+                    chatHeader.classList.remove('hidden');
+                    document.getElementById('chat-input-container').classList.remove('hidden');
+                    
+                    // Load messages
+                    loadChatMessages(chatId);
+                    
+                    // Update active chat in list
+                    document.querySelectorAll('[data-chat-id]').forEach(item => {
+                        item.classList.remove('bg-uni-blue', 'text-white');
+                        item.classList.add('hover:bg-gray-50');
+                    });
+                    
+                    const activeItem = document.querySelector(`[data-chat-id="${chatId}"]`);
+                    if (activeItem) {
+                        activeItem.classList.add('bg-uni-blue', 'text-white');
+                        activeItem.classList.remove('hover:bg-gray-50');
+                    }
+                }
+            } catch (error) {
+                console.error('Error opening chat:', error);
+            }
+        }
+
+        function loadChatMessages(chatId) {
+            // Clean up existing message listener
+            if (messageListener) {
+                messageListener();
+                messageListener = null;
+            }
+            
+            try {
+                const messagesQuery = window.firebaseFirestore.query(
+                    window.firebaseFirestore.collection(window.firebase.db, 'chats', chatId, 'messages'),
+                    window.firebaseFirestore.orderBy('timestamp', 'asc')
+                );
+                
+                messageListener = window.firebaseFirestore.onSnapshot(messagesQuery, (snapshot) => {
+                    const messagesContainer = document.getElementById('chat-messages');
+                    messagesContainer.innerHTML = '';
+                    
+                    if (snapshot.empty) {
+                        messagesContainer.innerHTML = `
+                            <div class="text-center text-gray-500 py-8">
+                                <i class="fas fa-comment text-2xl mb-2"></i>
+                                <p>No messages yet. Start the conversation!</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    snapshot.forEach((doc) => {
+                        const messageData = doc.data();
+                        const messageElement = createMessageElement(messageData);
+                        messagesContainer.appendChild(messageElement);
+                    });
+                    
+                    // Scroll to bottom
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                });
+            } catch (error) {
+                console.error('Error loading messages:', error);
+            }
+        }
+
+        function createMessageElement(messageData) {
+            const messageDiv = document.createElement('div');
+            const isOwnMessage = messageData.senderId === currentUser.uid;
+            const timestamp = messageData.timestamp ? getTimeAgo(messageData.timestamp.toDate()) : 'Sending...';
+            
+            messageDiv.className = `flex ${isOwnMessage ? 'justify-end' : 'justify-start'} chat-message`;
+            
+            messageDiv.innerHTML = `
+                <div class="max-w-xs lg:max-w-md">
+                    <div class="${isOwnMessage ? 'bg-uni-blue text-white' : 'bg-gray-200 text-gray-800'} rounded-lg px-4 py-2">
+                        <p class="text-sm">${messageData.text}</p>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1 ${isOwnMessage ? 'text-right' : 'text-left'}">${timestamp}</p>
+                </div>
+            `;
+            
+            return messageDiv;
+        }
+
+        async function sendMessage(chatId, messageText) {
+            if (!messageText.trim() || !currentUser) return false;
+            
+            try {
+                // Add message to subcollection
+                await window.firebaseFirestore.addDoc(
+                    window.firebaseFirestore.collection(window.firebase.db, 'chats', chatId, 'messages'),
+                    {
+                        senderId: currentUser.uid,
+                        text: messageText.trim(),
+                        timestamp: window.firebaseFirestore.serverTimestamp()
+                    }
+                );
+                
+                // Update chat's last message
+                await window.firebaseFirestore.updateDoc(
+                    window.firebaseFirestore.doc(window.firebase.db, 'chats', chatId),
+                    {
+                        lastMessage: messageText.trim(),
+                        lastUpdated: window.firebaseFirestore.serverTimestamp()
+                    }
+                );
+                
+                return true;
+            } catch (error) {
+                console.error('Error sending message:', error);
+                return false;
+            }
+        }
+
         // Create post function
         async function createPost(postData) {
             try {
@@ -1124,6 +1570,7 @@
                     author: userData.name,
                     authorFaculty: userData.faculty,
                     authorInitials: userData.name.split(' ').map(n => n[0]).join('').toUpperCase(),
+                    authorImage: userData.profileImage || null,
                     createdAt: window.firebaseFirestore.serverTimestamp(),
                     likes: 0,
                     comments: 0
@@ -1334,6 +1781,9 @@
                     case 'myposts':
                         loadMyPosts();
                         break;
+                    case 'messages':
+                        loadChatList();
+                        break;
                     case 'profile':
                         loadUserProfile();
                         break;
@@ -1389,6 +1839,60 @@
                 }
             });
 
+            // Profile image upload handlers
+            let currentProfileImage = null;
+            
+            document.getElementById('upload-image-btn').addEventListener('click', () => {
+                document.getElementById('profile-image-input').click();
+            });
+            
+            document.getElementById('edit-profile-preview').addEventListener('click', () => {
+                document.getElementById('profile-image-input').click();
+            });
+            
+            document.getElementById('profile-image-input').addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+                        alert('Image size should be less than 5MB');
+                        return;
+                    }
+                    
+                    try {
+                        showLoading();
+                        const resizedImage = await resizeImage(file);
+                        currentProfileImage = resizedImage;
+                        
+                        // Update preview
+                        const preview = document.getElementById('edit-profile-preview');
+                        preview.style.backgroundImage = `url(${resizedImage})`;
+                        preview.style.backgroundSize = 'cover';
+                        preview.style.backgroundPosition = 'center';
+                        preview.textContent = '';
+                        
+                        // Show remove button
+                        document.getElementById('remove-image-btn').classList.remove('hidden');
+                        document.getElementById('remove-image-btn').classList.add('flex');
+                        
+                        hideLoading();
+                    } catch (error) {
+                        hideLoading();
+                        console.error('Error processing image:', error);
+                        alert('Error processing image. Please try again.');
+                    }
+                }
+            });
+            
+            document.getElementById('remove-image-btn').addEventListener('click', () => {
+                currentProfileImage = null;
+                const preview = document.getElementById('edit-profile-preview');
+                preview.style.backgroundImage = '';
+                preview.textContent = 'U';
+                document.getElementById('remove-image-btn').classList.add('hidden');
+                document.getElementById('remove-image-btn').classList.remove('flex');
+                document.getElementById('profile-image-input').value = '';
+            });
+
             // Edit profile form
             document.getElementById('edit-profile-form').addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -1398,13 +1902,21 @@
                     name: document.getElementById('edit-name').value,
                     faculty: document.getElementById('edit-faculty').value,
                     bio: document.getElementById('edit-bio').value,
-                    skills: document.getElementById('edit-skills').value.split(',').map(s => s.trim()).filter(s => s)
+                    skills: document.getElementById('edit-skills').value.split(',').map(s => s.trim()).filter(s => s),
+                    phone: document.getElementById('edit-phone').value,
+                    yearOfStudy: document.getElementById('edit-year').value
                 };
+                
+                // Add profile image if uploaded
+                if (currentProfileImage !== null) {
+                    updatedData.profileImage = currentProfileImage;
+                }
                 
                 try {
                     await window.firebaseFirestore.updateDoc(window.firebaseFirestore.doc(window.firebase.db, 'users', currentUser.uid), updatedData);
                     hideLoading();
                     document.getElementById('edit-profile-modal').classList.add('hidden');
+                    document.getElementById('edit-profile-modal').classList.remove('flex');
                     loadUserProfile();
                     alert('Profile updated successfully!');
                 } catch (error) {
@@ -1424,6 +1936,26 @@
                         document.getElementById('edit-faculty').value = userData.faculty || '';
                         document.getElementById('edit-bio').value = userData.bio || '';
                         document.getElementById('edit-skills').value = userData.skills ? userData.skills.join(', ') : '';
+                        document.getElementById('edit-phone').value = userData.phone || '';
+                        document.getElementById('edit-year').value = userData.yearOfStudy || '';
+                        
+                        // Set profile image preview
+                        const preview = document.getElementById('edit-profile-preview');
+                        if (userData.profileImage) {
+                            preview.style.backgroundImage = `url(${userData.profileImage})`;
+                            preview.style.backgroundSize = 'cover';
+                            preview.style.backgroundPosition = 'center';
+                            preview.textContent = '';
+                            document.getElementById('remove-image-btn').classList.remove('hidden');
+                            document.getElementById('remove-image-btn').classList.add('flex');
+                            currentProfileImage = userData.profileImage;
+                        } else {
+                            preview.style.backgroundImage = '';
+                            preview.textContent = userData.name ? userData.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'U';
+                            document.getElementById('remove-image-btn').classList.add('hidden');
+                            document.getElementById('remove-image-btn').classList.remove('flex');
+                            currentProfileImage = null;
+                        }
                     }
                 } catch (error) {
                     console.error('Error loading profile for edit:', error);
@@ -1443,6 +1975,28 @@
             document.getElementById('search-input').addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
                     performSearch();
+                }
+            });
+
+            // Send message form
+            document.getElementById('send-message-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                if (!currentChatId) return;
+                
+                const messageInput = document.getElementById('message-input');
+                const messageText = messageInput.value.trim();
+                
+                if (!messageText) return;
+                
+                // Clear input immediately for better UX
+                messageInput.value = '';
+                
+                const success = await sendMessage(currentChatId, messageText);
+                if (!success) {
+                    // Restore message if sending failed
+                    messageInput.value = messageText;
+                    alert('Failed to send message. Please try again.');
                 }
             });
 
@@ -1467,5 +2021,5 @@
             });
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'95e900ff0038a62b',t:'MTc1MjQxMjA1Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'95e928e425dc99a6',t:'MTc1MjQxMzY4Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
