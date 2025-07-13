@@ -1335,46 +1335,46 @@
             return `${Math.floor(diffInSeconds / 86400)}d ago`;
         }
 
-        // Chat System Functions
+        // Facebook-style Chat System Functions
         async function startChat(otherUserId) {
             if (!currentUser || otherUserId === currentUser.uid) return null;
             
             try {
-                // Check if chat already exists
-                const existingChatId = await findExistingChat(otherUserId);
+                // Check if conversation already exists
+                const existingChatId = await findExistingConversation(otherUserId);
                 if (existingChatId) {
                     return existingChatId;
                 }
                 
-                // Create new chat
-                const chatData = {
+                // Create new conversation
+                const conversationData = {
                     participants: [currentUser.uid, otherUserId].sort(),
                     lastMessage: '',
                     lastUpdated: window.firebaseFirestore.serverTimestamp(),
                     createdAt: window.firebaseFirestore.serverTimestamp()
                 };
                 
-                const chatRef = await window.firebaseFirestore.addDoc(
-                    window.firebaseFirestore.collection(window.firebase.db, 'chats'), 
-                    chatData
+                const conversationRef = await window.firebaseFirestore.addDoc(
+                    window.firebaseFirestore.collection(window.firebase.db, 'conversations'), 
+                    conversationData
                 );
                 
-                return chatRef.id;
+                return conversationRef.id;
             } catch (error) {
-                console.error('Error starting chat:', error);
+                console.error('Error starting conversation:', error);
                 return null;
             }
         }
 
-        async function findExistingChat(otherUserId) {
+        async function findExistingConversation(otherUserId) {
             try {
                 const participants = [currentUser.uid, otherUserId].sort();
-                const chatsQuery = window.firebaseFirestore.query(
-                    window.firebaseFirestore.collection(window.firebase.db, 'chats'),
+                const conversationsQuery = window.firebaseFirestore.query(
+                    window.firebaseFirestore.collection(window.firebase.db, 'conversations'),
                     window.firebaseFirestore.where('participants', '==', participants)
                 );
                 
-                const querySnapshot = await window.firebaseFirestore.getDocs(chatsQuery);
+                const querySnapshot = await window.firebaseFirestore.getDocs(conversationsQuery);
                 
                 if (!querySnapshot.empty) {
                     return querySnapshot.docs[0].id;
@@ -1382,7 +1382,7 @@
                 
                 return null;
             } catch (error) {
-                console.error('Error finding existing chat:', error);
+                console.error('Error finding existing conversation:', error);
                 return null;
             }
         }
@@ -1391,8 +1391,9 @@
             if (!currentUser) return;
             
             try {
-                const chatsQuery = window.firebaseFirestore.query(
-                    window.firebaseFirestore.collection(window.firebase.db, 'chats'),
+                // Query all conversations where current user is a participant (Inbox View)
+                const conversationsQuery = window.firebaseFirestore.query(
+                    window.firebaseFirestore.collection(window.firebase.db, 'conversations'),
                     window.firebaseFirestore.where('participants', 'array-contains', currentUser.uid),
                     window.firebaseFirestore.orderBy('lastUpdated', 'desc')
                 );
@@ -1401,7 +1402,7 @@
                 chatListeners.forEach(unsubscribe => unsubscribe());
                 chatListeners.clear();
                 
-                const unsubscribe = window.firebaseFirestore.onSnapshot(chatsQuery, async (snapshot) => {
+                const unsubscribe = window.firebaseFirestore.onSnapshot(conversationsQuery, async (snapshot) => {
                     const chatList = document.getElementById('chat-list');
                     
                     if (snapshot.empty) {
@@ -1418,10 +1419,10 @@
                     chatList.innerHTML = '';
                     
                     for (const doc of snapshot.docs) {
-                        const chatData = doc.data();
-                        const otherUserId = chatData.participants.find(id => id !== currentUser.uid);
+                        const conversationData = doc.data();
+                        const otherUserId = conversationData.participants.find(id => id !== currentUser.uid);
                         
-                        // Get other user's info
+                        // Get other user's info for inbox display
                         try {
                             const otherUserDoc = await window.firebaseFirestore.getDoc(
                                 window.firebaseFirestore.doc(window.firebase.db, 'users', otherUserId)
@@ -1429,18 +1430,18 @@
                             
                             if (otherUserDoc.exists()) {
                                 const otherUserData = otherUserDoc.data();
-                                const chatItem = createChatListItem(doc.id, otherUserData, chatData);
+                                const chatItem = createChatListItem(doc.id, otherUserData, conversationData);
                                 chatList.appendChild(chatItem);
                             }
                         } catch (error) {
-                            console.error('Error loading user data for chat:', error);
+                            console.error('Error loading user data for conversation:', error);
                         }
                     }
                 });
                 
                 chatListeners.set('main', unsubscribe);
             } catch (error) {
-                console.error('Error loading chat list:', error);
+                console.error('Error loading conversation list:', error);
             }
         }
 
@@ -1473,19 +1474,19 @@
             return chatItem;
         }
 
-        async function openChat(chatId) {
-            currentChatId = chatId;
+        async function openChat(conversationId) {
+            currentChatId = conversationId;
             
             try {
-                // Get chat data
-                const chatDoc = await window.firebaseFirestore.getDoc(
-                    window.firebaseFirestore.doc(window.firebase.db, 'chats', chatId)
+                // Get conversation data
+                const conversationDoc = await window.firebaseFirestore.getDoc(
+                    window.firebaseFirestore.doc(window.firebase.db, 'conversations', conversationId)
                 );
                 
-                if (!chatDoc.exists()) return;
+                if (!conversationDoc.exists()) return;
                 
-                const chatData = chatDoc.data();
-                const otherUserId = chatData.participants.find(id => id !== currentUser.uid);
+                const conversationData = conversationDoc.data();
+                const otherUserId = conversationData.participants.find(id => id !== currentUser.uid);
                 
                 // Get other user's info
                 const otherUserDoc = await window.firebaseFirestore.getDoc(
@@ -1516,8 +1517,8 @@
                     chatHeader.classList.remove('hidden');
                     document.getElementById('chat-input-container').classList.remove('hidden');
                     
-                    // Load messages
-                    loadChatMessages(chatId);
+                    // Load messages from conversation
+                    loadChatMessages(conversationId);
                     
                     // Update active chat in list
                     document.querySelectorAll('[data-chat-id]').forEach(item => {
@@ -1525,18 +1526,18 @@
                         item.classList.add('hover:bg-gray-50');
                     });
                     
-                    const activeItem = document.querySelector(`[data-chat-id="${chatId}"]`);
+                    const activeItem = document.querySelector(`[data-chat-id="${conversationId}"]`);
                     if (activeItem) {
                         activeItem.classList.add('bg-uni-blue', 'text-white');
                         activeItem.classList.remove('hover:bg-gray-50');
                     }
                 }
             } catch (error) {
-                console.error('Error opening chat:', error);
+                console.error('Error opening conversation:', error);
             }
         }
 
-        function loadChatMessages(chatId) {
+        function loadChatMessages(conversationId) {
             // Clean up existing message listener
             if (messageListener) {
                 messageListener();
@@ -1544,9 +1545,9 @@
             }
             
             try {
-                // Query ALL messages in the chat room (not filtered by senderId)
+                // Query ALL messages in the conversation's messages subcollection
                 const messagesQuery = window.firebaseFirestore.query(
-                    window.firebaseFirestore.collection(window.firebase.db, 'chats', chatId, 'messages'),
+                    window.firebaseFirestore.collection(window.firebase.db, 'conversations', conversationId, 'messages'),
                     window.firebaseFirestore.orderBy('timestamp', 'asc')
                 );
                 
@@ -1564,7 +1565,7 @@
                         return;
                     }
                     
-                    // Process all messages from both users
+                    // Process all messages from both users with proper alignment
                     snapshot.forEach((doc) => {
                         const messageData = doc.data();
                         const messageElement = createMessageElement(messageData);
@@ -1609,23 +1610,34 @@
             return messageDiv;
         }
 
-        async function sendMessage(chatId, messageText) {
+        async function sendMessage(conversationId, messageText) {
             if (!messageText.trim() || !currentUser) return false;
             
             try {
-                // Add message to subcollection
+                // Get conversation data to find the other user
+                const conversationDoc = await window.firebaseFirestore.getDoc(
+                    window.firebaseFirestore.doc(window.firebase.db, 'conversations', conversationId)
+                );
+                
+                if (!conversationDoc.exists()) return false;
+                
+                const conversationData = conversationDoc.data();
+                const receiverId = conversationData.participants.find(id => id !== currentUser.uid);
+                
+                // Add message to messages subcollection with sender and receiver info
                 await window.firebaseFirestore.addDoc(
-                    window.firebaseFirestore.collection(window.firebase.db, 'chats', chatId, 'messages'),
+                    window.firebaseFirestore.collection(window.firebase.db, 'conversations', conversationId, 'messages'),
                     {
                         senderId: currentUser.uid,
+                        receiverId: receiverId,
                         text: messageText.trim(),
                         timestamp: window.firebaseFirestore.serverTimestamp()
                     }
                 );
                 
-                // Update chat's last message
+                // Update conversation's last message and timestamp
                 await window.firebaseFirestore.updateDoc(
-                    window.firebaseFirestore.doc(window.firebase.db, 'chats', chatId),
+                    window.firebaseFirestore.doc(window.firebase.db, 'conversations', conversationId),
                     {
                         lastMessage: messageText.trim(),
                         lastUpdated: window.firebaseFirestore.serverTimestamp()
@@ -2183,5 +2195,5 @@
             });
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'95e9421d65b80886',t:'MTc1MjQxNDcxOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'95e9499d82ad0886',t:'MTc1MjQxNTAyNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
