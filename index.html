@@ -527,8 +527,8 @@
 
                     <div class="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0">
                         <!-- Chat List -->
-                        <div class="lg:col-span-1 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col">
-                            <div class="p-4 border-b border-gray-200">
+                        <div class="lg:col-span-1 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col h-[calc(100vh-200px)]">
+                            <div class="p-4 border-b border-gray-200 flex-shrink-0">
                                 <h3 class="font-semibold text-gray-800">Conversations</h3>
                             </div>
                             <div id="chat-list" class="flex-1 overflow-y-auto">
@@ -540,8 +540,8 @@
                         </div>
 
                         <!-- Chat Window -->
-                        <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col">
-                            <div id="chat-header" class="p-4 border-b border-gray-200 hidden">
+                        <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col h-[calc(100vh-200px)]">
+                            <div id="chat-header" class="p-4 border-b border-gray-200 hidden flex-shrink-0">
                                 <div class="flex items-center">
                                     <div id="chat-user-avatar" class="w-10 h-10 bg-gradient-to-r from-uni-pink to-uni-purple rounded-full flex items-center justify-center text-white font-semibold">
                                         U
@@ -553,7 +553,7 @@
                                 </div>
                             </div>
                             
-                            <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4">
+                            <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
                                 <div class="text-center text-gray-500 py-8">
                                     <i class="fas fa-comment text-4xl mb-4"></i>
                                     <h3 class="text-lg font-semibold mb-2">Start a conversation</h3>
@@ -561,8 +561,12 @@
                                 </div>
                             </div>
                             
-                            <div id="chat-input-container" class="p-4 border-t border-gray-200 hidden">
+                            <div id="chat-input-container" class="p-4 border-t border-gray-200 hidden flex-shrink-0">
                                 <form id="send-message-form" class="flex space-x-2">
+                                    <input type="file" id="image-input" accept="image/*" class="hidden">
+                                    <button type="button" id="attach-btn" class="bg-gray-100 text-gray-600 px-3 py-2 rounded-lg hover:bg-gray-200 transition-colors">
+                                        <i class="fas fa-paperclip"></i>
+                                    </button>
                                     <input type="text" id="message-input" placeholder="Type your message..." 
                                            class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uni-blue focus:border-transparent">
                                     <button type="submit" class="bg-uni-blue text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
@@ -786,6 +790,16 @@
                     Update Post
                 </button>
             </form>
+        </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div id="image-modal" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden items-center justify-center">
+        <div class="relative max-w-4xl max-h-[90vh] mx-4">
+            <button id="close-image-modal" class="absolute -top-10 right-0 text-white hover:text-gray-300 text-2xl">
+                <i class="fas fa-times"></i>
+            </button>
+            <img id="modal-image" src="" alt="Full size image" class="max-w-full max-h-full object-contain rounded-lg">
         </div>
     </div>
 
@@ -1636,11 +1650,27 @@
             // Facebook-style alignment: sent messages on right (blue), received on left (gray)
             messageDiv.className = `flex ${isOwnMessage ? 'justify-end' : 'justify-start'} chat-message mb-4`;
             
-            messageDiv.innerHTML = `
-                <div class="max-w-xs lg:max-w-md ${isOwnMessage ? 'text-right' : 'text-left'}">
+            // Create message content based on whether it has image or text
+            let messageContent = '';
+            
+            if (messageData.imageUrl) {
+                messageContent = `
+                    <div class="${isOwnMessage ? 'bg-uni-blue text-white ml-auto' : 'bg-gray-200 text-gray-800 mr-auto'} rounded-lg p-2 inline-block">
+                        <img src="${messageData.imageUrl}" alt="Shared image" class="rounded-md max-w-[300px] max-h-[300px] object-cover cursor-pointer" onclick="openImageModal('${messageData.imageUrl}')">
+                        ${messageData.text ? `<p class="text-sm break-words mt-2">${messageData.text}</p>` : ''}
+                    </div>
+                `;
+            } else {
+                messageContent = `
                     <div class="${isOwnMessage ? 'bg-uni-blue text-white ml-auto' : 'bg-gray-200 text-gray-800 mr-auto'} rounded-lg px-4 py-2 inline-block">
                         <p class="text-sm break-words">${messageData.text}</p>
                     </div>
+                `;
+            }
+            
+            messageDiv.innerHTML = `
+                <div class="max-w-xs lg:max-w-md ${isOwnMessage ? 'text-right' : 'text-left'}">
+                    ${messageContent}
                     <p class="text-xs text-gray-500 mt-1 ${isOwnMessage ? 'text-right' : 'text-left'}">${timestamp}</p>
                 </div>
             `;
@@ -1648,8 +1678,8 @@
             return messageDiv;
         }
 
-        async function sendMessage(partnerId, messageText) {
-            if (!messageText.trim() || !currentUser) return false;
+        async function sendMessage(partnerId, messageText, imageUrl = null) {
+            if ((!messageText.trim() && !imageUrl) || !currentUser) return false;
             
             try {
                 // Use Unix timestamp in milliseconds for consistent sorting
@@ -1661,6 +1691,11 @@
                     timestamp: timestamp,
                     seen: false
                 };
+                
+                // Add image URL if provided
+                if (imageUrl) {
+                    messageData.imageUrl = imageUrl;
+                }
                 
                 // Save message to sender's conversation path: users/{senderId}/conversations/{receiverId}/messages
                 await window.firebaseFirestore.addDoc(
@@ -1674,11 +1709,14 @@
                     messageData
                 );
                 
+                // Determine last message preview
+                const lastMessagePreview = imageUrl ? (messageText.trim() ? `📷 ${messageText.trim()}` : '📷 Image') : messageText.trim();
+                
                 // Update last message in sender's conversation
                 await window.firebaseFirestore.updateDoc(
                     window.firebaseFirestore.doc(window.firebase.db, 'users', currentUser.uid, 'conversations', partnerId),
                     {
-                        lastMessage: messageText.trim(),
+                        lastMessage: lastMessagePreview,
                         lastUpdated: window.firebaseFirestore.serverTimestamp()
                     }
                 );
@@ -1690,7 +1728,7 @@
                 if (receiverConversationDoc.exists()) {
                     const currentUnreadCount = receiverConversationDoc.data().unreadCount || 0;
                     await window.firebaseFirestore.updateDoc(receiverConversationRef, {
-                        lastMessage: messageText.trim(),
+                        lastMessage: lastMessagePreview,
                         lastUpdated: window.firebaseFirestore.serverTimestamp(),
                         unreadCount: currentUnreadCount + 1
                     });
@@ -1701,6 +1739,35 @@
                 console.error('Error sending message:', error);
                 return false;
             }
+        }
+
+        async function uploadImageToFirebase(file) {
+            try {
+                // Create a unique filename
+                const timestamp = Date.now();
+                const fileName = `chat-images/${currentUser.uid}_${timestamp}_${file.name}`;
+                
+                // Create storage reference
+                const storageRef = window.firebaseStorage.ref(window.firebase.storage, fileName);
+                
+                // Upload file
+                await window.firebaseStorage.uploadBytes(storageRef, file);
+                
+                // Get download URL
+                const downloadURL = await window.firebaseStorage.getDownloadURL(storageRef);
+                
+                return downloadURL;
+            } catch (error) {
+                console.error('Error uploading image:', error);
+                throw error;
+            }
+        }
+
+        // Image modal function
+        function openImageModal(imageUrl) {
+            document.getElementById('modal-image').src = imageUrl;
+            document.getElementById('image-modal').classList.remove('hidden');
+            document.getElementById('image-modal').classList.add('flex');
         }
 
         // Create post function
@@ -2226,6 +2293,69 @@
                 }
             });
 
+            // Image attachment handler
+            document.getElementById('attach-btn').addEventListener('click', () => {
+                document.getElementById('image-input').click();
+            });
+
+            document.getElementById('image-input').addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file || !currentChatId) return;
+
+                // Validate file type
+                if (!file.type.startsWith('image/')) {
+                    alert('Please select an image file.');
+                    return;
+                }
+
+                // Validate file size (5MB limit)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('Image size should be less than 5MB.');
+                    return;
+                }
+
+                try {
+                    showLoading();
+                    
+                    // Upload image to Firebase Storage
+                    const imageUrl = await uploadImageToFirebase(file);
+                    
+                    // Get any text message to send with the image
+                    const messageInput = document.getElementById('message-input');
+                    const messageText = messageInput.value.trim();
+                    
+                    // Send message with image
+                    const success = await sendMessage(currentChatId, messageText, imageUrl);
+                    
+                    if (success) {
+                        messageInput.value = '';
+                        e.target.value = ''; // Clear file input
+                    } else {
+                        alert('Failed to send image. Please try again.');
+                    }
+                    
+                    hideLoading();
+                } catch (error) {
+                    hideLoading();
+                    console.error('Error sending image:', error);
+                    alert('Failed to upload image. Please try again.');
+                }
+            });
+
+            // Image modal handlers
+            document.getElementById('close-image-modal').addEventListener('click', () => {
+                document.getElementById('image-modal').classList.add('hidden');
+                document.getElementById('image-modal').classList.remove('flex');
+            });
+
+            // Close modal when clicking outside the image
+            document.getElementById('image-modal').addEventListener('click', (e) => {
+                if (e.target === e.currentTarget) {
+                    document.getElementById('image-modal').classList.add('hidden');
+                    document.getElementById('image-modal').classList.remove('flex');
+                }
+            });
+
             // Home page filters
             document.getElementById('apply-filters').addEventListener('click', () => {
                 const typeFilter = document.getElementById('home-type-filter').value;
@@ -2247,5 +2377,5 @@
             });
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'95e9699d646ef305',t:'MTc1MjQxNjMzNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'95e97e8e620514aa',t:'MTc1MjQxNzE5NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
