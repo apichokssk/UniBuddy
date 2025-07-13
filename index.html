@@ -26,7 +26,7 @@
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-        import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, doc, setDoc, getDoc, deleteDoc, updateDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, doc, setDoc, getDoc, deleteDoc, updateDoc, serverTimestamp, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
         import { getStorage, ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
         import { getAnalytics } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js';
 
@@ -51,7 +51,7 @@
         // Make Firebase available globally
         window.firebase = { auth, db, storage, analytics };
         window.firebaseAuth = { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged };
-        window.firebaseFirestore = { collection, addDoc, getDocs, query, where, orderBy, doc, setDoc, getDoc, deleteDoc, updateDoc, serverTimestamp };
+        window.firebaseFirestore = { collection, addDoc, getDocs, query, where, orderBy, doc, setDoc, getDoc, deleteDoc, updateDoc, serverTimestamp, onSnapshot };
         window.firebaseStorage = { ref, uploadBytes, getDownloadURL };
     </script>
 
@@ -718,6 +718,74 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Edit Post Modal -->
+    <div id="edit-post-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center">
+        <div class="bg-white rounded-xl p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-gray-800">Edit Post</h3>
+                <button id="close-edit-post-modal" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="edit-post-form" class="space-y-4">
+                <input type="hidden" id="edit-post-id">
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Post Type</label>
+                    <div class="grid grid-cols-2 gap-4">
+                        <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-uni-blue transition-colors">
+                            <input type="radio" name="edit-post-type" value="need" class="mr-3">
+                            <div>
+                                <div class="font-medium text-gray-800">Need Help</div>
+                                <div class="text-sm text-gray-500">I need assistance with something</div>
+                            </div>
+                        </label>
+                        <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-uni-blue transition-colors">
+                            <input type="radio" name="edit-post-type" value="offer" class="mr-3">
+                            <div>
+                                <div class="font-medium text-gray-800">Offer Help</div>
+                                <div class="text-sm text-gray-500">I can help others with something</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Title</label>
+                    <input type="text" id="edit-post-title" required 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uni-blue focus:border-transparent"
+                           placeholder="Brief description of what you need/offer">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                    <textarea id="edit-post-description" rows="4" required
+                              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uni-blue focus:border-transparent"
+                              placeholder="Provide more details about your request or offer..."></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Skills/Tags</label>
+                    <input type="text" id="edit-post-skills" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uni-blue focus:border-transparent"
+                           placeholder="e.g., Python, Web Design, Mathematics (separate with commas)">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">What I can offer in return</label>
+                    <textarea id="edit-post-exchange" rows="2"
+                              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uni-blue focus:border-transparent"
+                              placeholder="What skills or help can you provide in exchange?"></textarea>
+                </div>
+
+                <button type="submit" class="w-full bg-uni-blue text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                    Update Post
+                </button>
+            </form>
         </div>
     </div>
 
@@ -1506,6 +1574,14 @@
                 });
             } catch (error) {
                 console.error('Error loading messages:', error);
+                // Show fallback message if Firebase fails
+                const messagesContainer = document.getElementById('chat-messages');
+                messagesContainer.innerHTML = `
+                    <div class="text-center text-gray-500 py-8">
+                        <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
+                        <p>Unable to load messages. Please try again.</p>
+                    </div>
+                `;
             }
         }
 
@@ -1586,6 +1662,11 @@
 
         // Load user's posts
         async function loadMyPosts() {
+            if (!currentUser) {
+                displayMyPosts();
+                return;
+            }
+            
             try {
                 const postsQuery = window.firebaseFirestore.query(
                     window.firebaseFirestore.collection(window.firebase.db, 'posts'),
@@ -1602,6 +1683,8 @@
                 displayMyPosts();
             } catch (error) {
                 console.error('Error loading user posts:', error);
+                // Show empty state if Firebase fails
+                userPosts = [];
                 displayMyPosts();
             }
         }
@@ -1660,6 +1743,12 @@
                     </div>
                 `;
                 
+                // Add edit functionality
+                const editBtn = postDiv.querySelector('.edit-post-btn');
+                editBtn.addEventListener('click', () => {
+                    openEditPostModal(post);
+                });
+                
                 // Add delete functionality
                 const deleteBtn = postDiv.querySelector('.delete-post-btn');
                 deleteBtn.addEventListener('click', async () => {
@@ -1677,6 +1766,40 @@
                 
                 container.appendChild(postDiv);
             });
+        }
+
+        // Edit post functions
+        function openEditPostModal(post) {
+            document.getElementById('edit-post-id').value = post.id;
+            document.getElementById('edit-post-title').value = post.title;
+            document.getElementById('edit-post-description').value = post.description;
+            document.getElementById('edit-post-skills').value = post.tags ? post.tags.join(', ') : '';
+            document.getElementById('edit-post-exchange').value = post.exchange || '';
+            
+            // Set post type
+            const typeRadio = document.querySelector(`input[name="edit-post-type"][value="${post.type}"]`);
+            if (typeRadio) {
+                typeRadio.checked = true;
+            }
+            
+            document.getElementById('edit-post-modal').classList.remove('hidden');
+            document.getElementById('edit-post-modal').classList.add('flex');
+        }
+
+        async function updatePost(postId, updatedData) {
+            try {
+                await window.firebaseFirestore.updateDoc(
+                    window.firebaseFirestore.doc(window.firebase.db, 'posts', postId),
+                    {
+                        ...updatedData,
+                        updatedAt: window.firebaseFirestore.serverTimestamp()
+                    }
+                );
+                return true;
+            } catch (error) {
+                console.error('Error updating post:', error);
+                return false;
+            }
         }
 
         // Search functionality
@@ -1926,6 +2049,40 @@
                 }
             });
 
+            // Edit post form
+            document.getElementById('edit-post-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                showLoading();
+                
+                const postId = document.getElementById('edit-post-id').value;
+                const updatedData = {
+                    type: document.querySelector('input[name="edit-post-type"]:checked').value,
+                    title: document.getElementById('edit-post-title').value,
+                    description: document.getElementById('edit-post-description').value,
+                    tags: document.getElementById('edit-post-skills').value.split(',').map(s => s.trim()).filter(s => s),
+                    exchange: document.getElementById('edit-post-exchange').value
+                };
+                
+                const success = await updatePost(postId, updatedData);
+                hideLoading();
+                
+                if (success) {
+                    document.getElementById('edit-post-modal').classList.add('hidden');
+                    document.getElementById('edit-post-modal').classList.remove('flex');
+                    loadMyPosts();
+                    loadAllPosts();
+                    alert('Post updated successfully!');
+                } else {
+                    alert('Error updating post. Please try again.');
+                }
+            });
+
+            // Edit post modal close
+            document.getElementById('close-edit-post-modal').addEventListener('click', () => {
+                document.getElementById('edit-post-modal').classList.add('hidden');
+                document.getElementById('edit-post-modal').classList.remove('flex');
+            });
+
             // Edit profile modal
             document.getElementById('edit-profile-btn').addEventListener('click', async () => {
                 try {
@@ -2021,5 +2178,5 @@
             });
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'95e928e425dc99a6',t:'MTc1MjQxMzY4Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'95e937b904b19bae',t:'MTc1MjQxNDI5NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
