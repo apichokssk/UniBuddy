@@ -1302,11 +1302,11 @@
                     
                     try {
                         // Start a chat with the post author
-                        const chatId = await startChat(post.userId);
-                        if (chatId) {
+                        const partnerId = await startChat(post.userId);
+                        if (partnerId) {
                             // Switch to messages page and open the chat
                             showPage('messages');
-                            setTimeout(() => openChat(chatId), 500);
+                            setTimeout(() => openChat(partnerId), 500);
                             
                             this.textContent = 'Chat Started!';
                             this.className = 'connect-btn bg-green-500 text-white px-6 py-2 rounded-lg';
@@ -1335,31 +1335,21 @@
             return `${Math.floor(diffInSeconds / 86400)}d ago`;
         }
 
-        // Facebook-style Chat System Functions
+        // Messenger-style Chat System Functions
         async function startChat(otherUserId) {
             if (!currentUser || otherUserId === currentUser.uid) return null;
             
             try {
-                // Check if conversation already exists
-                const existingChatId = await findExistingConversation(otherUserId);
-                if (existingChatId) {
-                    return existingChatId;
+                // Check if conversation already exists in current user's conversations
+                const existingConversation = await findExistingConversation(otherUserId);
+                if (existingConversation) {
+                    return otherUserId; // Return the partner's ID as the conversation identifier
                 }
                 
-                // Create new conversation
-                const conversationData = {
-                    participants: [currentUser.uid, otherUserId].sort(),
-                    lastMessage: '',
-                    lastUpdated: window.firebaseFirestore.serverTimestamp(),
-                    createdAt: window.firebaseFirestore.serverTimestamp()
-                };
+                // Create conversation entry for both users
+                await createConversationForBothUsers(otherUserId);
                 
-                const conversationRef = await window.firebaseFirestore.addDoc(
-                    window.firebaseFirestore.collection(window.firebase.db, 'conversations'), 
-                    conversationData
-                );
-                
-                return conversationRef.id;
+                return otherUserId;
             } catch (error) {
                 console.error('Error starting conversation:', error);
                 return null;
@@ -1368,22 +1358,63 @@
 
         async function findExistingConversation(otherUserId) {
             try {
-                const participants = [currentUser.uid, otherUserId].sort();
-                const conversationsQuery = window.firebaseFirestore.query(
-                    window.firebaseFirestore.collection(window.firebase.db, 'conversations'),
-                    window.firebaseFirestore.where('participants', '==', participants)
+                const conversationDoc = await window.firebaseFirestore.getDoc(
+                    window.firebaseFirestore.doc(window.firebase.db, 'users', currentUser.uid, 'conversations', otherUserId)
                 );
                 
-                const querySnapshot = await window.firebaseFirestore.getDocs(conversationsQuery);
-                
-                if (!querySnapshot.empty) {
-                    return querySnapshot.docs[0].id;
-                }
-                
-                return null;
+                return conversationDoc.exists();
             } catch (error) {
                 console.error('Error finding existing conversation:', error);
-                return null;
+                return false;
+            }
+        }
+
+        async function createConversationForBothUsers(otherUserId) {
+            try {
+                // Get other user's info
+                const otherUserDoc = await window.firebaseFirestore.getDoc(
+                    window.firebaseFirestore.doc(window.firebase.db, 'users', otherUserId)
+                );
+                const currentUserDoc = await window.firebaseFirestore.getDoc(
+                    window.firebaseFirestore.doc(window.firebase.db, 'users', currentUser.uid)
+                );
+                
+                const otherUserData = otherUserDoc.data();
+                const currentUserData = currentUserDoc.data();
+                
+                const timestamp = window.firebaseFirestore.serverTimestamp();
+                
+                // Create conversation entry in current user's conversations
+                await window.firebaseFirestore.setDoc(
+                    window.firebaseFirestore.doc(window.firebase.db, 'users', currentUser.uid, 'conversations', otherUserId),
+                    {
+                        partnerId: otherUserId,
+                        partnerName: otherUserData.name,
+                        partnerFaculty: otherUserData.faculty,
+                        partnerImage: otherUserData.profileImage || null,
+                        lastMessage: '',
+                        lastUpdated: timestamp,
+                        createdAt: timestamp,
+                        unreadCount: 0
+                    }
+                );
+                
+                // Create conversation entry in other user's conversations
+                await window.firebaseFirestore.setDoc(
+                    window.firebaseFirestore.doc(window.firebase.db, 'users', otherUserId, 'conversations', currentUser.uid),
+                    {
+                        partnerId: currentUser.uid,
+                        partnerName: currentUserData.name,
+                        partnerFaculty: currentUserData.faculty,
+                        partnerImage: currentUserData.profileImage || null,
+                        lastMessage: '',
+                        lastUpdated: timestamp,
+                        createdAt: timestamp,
+                        unreadCount: 0
+                    }
+                );
+            } catch (error) {
+                console.error('Error creating conversation for both users:', error);
             }
         }
 
@@ -1391,10 +1422,9 @@
             if (!currentUser) return;
             
             try {
-                // Query all conversations where current user is a participant (Inbox View)
+                // Query all conversations from current user's conversations subcollection (Inbox View)
                 const conversationsQuery = window.firebaseFirestore.query(
-                    window.firebaseFirestore.collection(window.firebase.db, 'conversations'),
-                    window.firebaseFirestore.where('participants', 'array-contains', currentUser.uid),
+                    window.firebaseFirestore.collection(window.firebase.db, 'users', currentUser.uid, 'conversations'),
                     window.firebaseFirestore.orderBy('lastUpdated', 'desc')
                 );
                 
@@ -1402,7 +1432,7 @@
                 chatListeners.forEach(unsubscribe => unsubscribe());
                 chatListeners.clear();
                 
-                const unsubscribe = window.firebaseFirestore.onSnapshot(conversationsQuery, async (snapshot) => {
+                const unsubscribe = window.firebaseFirestore.onSnapshot(conversationsQuery, (snapshot) => {
                     const chatList = document.getElementById('chat-list');
                     
                     if (snapshot.empty) {
@@ -1418,25 +1448,11 @@
                     
                     chatList.innerHTML = '';
                     
-                    for (const doc of snapshot.docs) {
+                    snapshot.forEach((doc) => {
                         const conversationData = doc.data();
-                        const otherUserId = conversationData.participants.find(id => id !== currentUser.uid);
-                        
-                        // Get other user's info for inbox display
-                        try {
-                            const otherUserDoc = await window.firebaseFirestore.getDoc(
-                                window.firebaseFirestore.doc(window.firebase.db, 'users', otherUserId)
-                            );
-                            
-                            if (otherUserDoc.exists()) {
-                                const otherUserData = otherUserDoc.data();
-                                const chatItem = createChatListItem(doc.id, otherUserData, conversationData);
-                                chatList.appendChild(chatItem);
-                            }
-                        } catch (error) {
-                            console.error('Error loading user data for conversation:', error);
-                        }
-                    }
+                        const chatItem = createChatListItem(conversationData.partnerId, conversationData, conversationData);
+                        chatList.appendChild(chatItem);
+                    });
                 });
                 
                 chatListeners.set('main', unsubscribe);
@@ -1445,99 +1461,110 @@
             }
         }
 
-        function createChatListItem(chatId, otherUserData, chatData) {
+        function createChatListItem(partnerId, conversationData, chatData) {
             const chatItem = document.createElement('div');
             chatItem.className = 'p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors';
-            chatItem.setAttribute('data-chat-id', chatId);
+            chatItem.setAttribute('data-chat-id', partnerId);
             
-            const initials = otherUserData.name ? otherUserData.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'U';
+            const initials = conversationData.partnerName ? conversationData.partnerName.split(' ').map(n => n[0]).join('').toUpperCase() : 'U';
             const lastMessageTime = chatData.lastUpdated ? getTimeAgo(chatData.lastUpdated.toDate()) : '';
+            const unreadBadge = chatData.unreadCount > 0 ? `<span class="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center ml-2">${chatData.unreadCount}</span>` : '';
             
             chatItem.innerHTML = `
                 <div class="flex items-center">
-                    <div class="w-12 h-12 bg-gradient-to-r from-uni-pink to-uni-purple rounded-full flex items-center justify-center text-white font-semibold overflow-hidden" style="${otherUserData.profileImage ? `background-image: url(${otherUserData.profileImage}); background-size: cover; background-position: center;` : ''}">
-                        ${otherUserData.profileImage ? '' : initials}
+                    <div class="w-12 h-12 bg-gradient-to-r from-uni-pink to-uni-purple rounded-full flex items-center justify-center text-white font-semibold overflow-hidden" style="${conversationData.partnerImage ? `background-image: url(${conversationData.partnerImage}); background-size: cover; background-position: center;` : ''}">
+                        ${conversationData.partnerImage ? '' : initials}
                     </div>
                     <div class="ml-3 flex-1 min-w-0">
                         <div class="flex justify-between items-start">
-                            <h4 class="font-semibold text-gray-800 truncate">${otherUserData.name}</h4>
-                            <span class="text-xs text-gray-500 ml-2">${lastMessageTime}</span>
+                            <h4 class="font-semibold text-gray-800 truncate">${conversationData.partnerName}</h4>
+                            <div class="flex items-center">
+                                <span class="text-xs text-gray-500">${lastMessageTime}</span>
+                                ${unreadBadge}
+                            </div>
                         </div>
                         <p class="text-sm text-gray-600 truncate">${chatData.lastMessage || 'Start a conversation...'}</p>
-                        <p class="text-xs text-gray-400">${otherUserData.faculty}</p>
+                        <p class="text-xs text-gray-400">${conversationData.partnerFaculty}</p>
                     </div>
                 </div>
             `;
             
-            chatItem.addEventListener('click', () => openChat(chatId));
+            chatItem.addEventListener('click', () => openChat(partnerId));
             
             return chatItem;
         }
 
-        async function openChat(conversationId) {
-            currentChatId = conversationId;
+        async function openChat(partnerId) {
+            currentChatId = partnerId;
             
             try {
-                // Get conversation data
+                // Get conversation data from current user's conversations
                 const conversationDoc = await window.firebaseFirestore.getDoc(
-                    window.firebaseFirestore.doc(window.firebase.db, 'conversations', conversationId)
+                    window.firebaseFirestore.doc(window.firebase.db, 'users', currentUser.uid, 'conversations', partnerId)
                 );
                 
                 if (!conversationDoc.exists()) return;
                 
                 const conversationData = conversationDoc.data();
-                const otherUserId = conversationData.participants.find(id => id !== currentUser.uid);
                 
-                // Get other user's info
-                const otherUserDoc = await window.firebaseFirestore.getDoc(
-                    window.firebaseFirestore.doc(window.firebase.db, 'users', otherUserId)
-                );
+                // Update chat header
+                const chatHeader = document.getElementById('chat-header');
+                const chatUserAvatar = document.getElementById('chat-user-avatar');
+                const initials = conversationData.partnerName ? conversationData.partnerName.split(' ').map(n => n[0]).join('').toUpperCase() : 'U';
                 
-                if (otherUserDoc.exists()) {
-                    const otherUserData = otherUserDoc.data();
-                    
-                    // Update chat header
-                    const chatHeader = document.getElementById('chat-header');
-                    const chatUserAvatar = document.getElementById('chat-user-avatar');
-                    const initials = otherUserData.name ? otherUserData.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'U';
-                    
-                    if (otherUserData.profileImage) {
-                        chatUserAvatar.style.backgroundImage = `url(${otherUserData.profileImage})`;
-                        chatUserAvatar.style.backgroundSize = 'cover';
-                        chatUserAvatar.style.backgroundPosition = 'center';
-                        chatUserAvatar.textContent = '';
-                    } else {
-                        chatUserAvatar.style.backgroundImage = '';
-                        chatUserAvatar.textContent = initials;
-                    }
-                    
-                    document.getElementById('chat-user-name').textContent = otherUserData.name;
-                    document.getElementById('chat-user-faculty').textContent = otherUserData.faculty;
-                    
-                    chatHeader.classList.remove('hidden');
-                    document.getElementById('chat-input-container').classList.remove('hidden');
-                    
-                    // Load messages from conversation
-                    loadChatMessages(conversationId);
-                    
-                    // Update active chat in list
-                    document.querySelectorAll('[data-chat-id]').forEach(item => {
-                        item.classList.remove('bg-uni-blue', 'text-white');
-                        item.classList.add('hover:bg-gray-50');
-                    });
-                    
-                    const activeItem = document.querySelector(`[data-chat-id="${conversationId}"]`);
-                    if (activeItem) {
-                        activeItem.classList.add('bg-uni-blue', 'text-white');
-                        activeItem.classList.remove('hover:bg-gray-50');
-                    }
+                if (conversationData.partnerImage) {
+                    chatUserAvatar.style.backgroundImage = `url(${conversationData.partnerImage})`;
+                    chatUserAvatar.style.backgroundSize = 'cover';
+                    chatUserAvatar.style.backgroundPosition = 'center';
+                    chatUserAvatar.textContent = '';
+                } else {
+                    chatUserAvatar.style.backgroundImage = '';
+                    chatUserAvatar.textContent = initials;
+                }
+                
+                document.getElementById('chat-user-name').textContent = conversationData.partnerName;
+                document.getElementById('chat-user-faculty').textContent = conversationData.partnerFaculty;
+                
+                chatHeader.classList.remove('hidden');
+                document.getElementById('chat-input-container').classList.remove('hidden');
+                
+                // Load messages from current user's conversation with this partner
+                loadChatMessages(partnerId);
+                
+                // Mark messages as read
+                await markMessagesAsRead(partnerId);
+                
+                // Update active chat in list
+                document.querySelectorAll('[data-chat-id]').forEach(item => {
+                    item.classList.remove('bg-uni-blue', 'text-white');
+                    item.classList.add('hover:bg-gray-50');
+                });
+                
+                const activeItem = document.querySelector(`[data-chat-id="${partnerId}"]`);
+                if (activeItem) {
+                    activeItem.classList.add('bg-uni-blue', 'text-white');
+                    activeItem.classList.remove('hover:bg-gray-50');
                 }
             } catch (error) {
                 console.error('Error opening conversation:', error);
             }
         }
 
-        function loadChatMessages(conversationId) {
+        async function markMessagesAsRead(partnerId) {
+            try {
+                // Reset unread count for this conversation
+                await window.firebaseFirestore.updateDoc(
+                    window.firebaseFirestore.doc(window.firebase.db, 'users', currentUser.uid, 'conversations', partnerId),
+                    {
+                        unreadCount: 0
+                    }
+                );
+            } catch (error) {
+                console.error('Error marking messages as read:', error);
+            }
+        }
+
+        function loadChatMessages(partnerId) {
             // Clean up existing message listener
             if (messageListener) {
                 messageListener();
@@ -1545,9 +1572,9 @@
             }
             
             try {
-                // Query ALL messages in the conversation's messages subcollection
+                // Query ALL messages in current user's conversation with this partner
                 const messagesQuery = window.firebaseFirestore.query(
-                    window.firebaseFirestore.collection(window.firebase.db, 'conversations', conversationId, 'messages'),
+                    window.firebaseFirestore.collection(window.firebase.db, 'users', currentUser.uid, 'conversations', partnerId, 'messages'),
                     window.firebaseFirestore.orderBy('timestamp', 'asc')
                 );
                 
@@ -1565,7 +1592,7 @@
                         return;
                     }
                     
-                    // Process all messages from both users with proper alignment
+                    // Process all messages with proper alignment based on sender
                     snapshot.forEach((doc) => {
                         const messageData = doc.data();
                         const messageElement = createMessageElement(messageData);
@@ -1610,39 +1637,52 @@
             return messageDiv;
         }
 
-        async function sendMessage(conversationId, messageText) {
+        async function sendMessage(partnerId, messageText) {
             if (!messageText.trim() || !currentUser) return false;
             
             try {
-                // Get conversation data to find the other user
-                const conversationDoc = await window.firebaseFirestore.getDoc(
-                    window.firebaseFirestore.doc(window.firebase.db, 'conversations', conversationId)
-                );
+                const timestamp = window.firebaseFirestore.serverTimestamp();
+                const messageData = {
+                    senderId: currentUser.uid,
+                    receiverId: partnerId,
+                    text: messageText.trim(),
+                    timestamp: timestamp,
+                    seen: false
+                };
                 
-                if (!conversationDoc.exists()) return false;
-                
-                const conversationData = conversationDoc.data();
-                const receiverId = conversationData.participants.find(id => id !== currentUser.uid);
-                
-                // Add message to messages subcollection with sender and receiver info
+                // Save message to sender's conversation (current user)
                 await window.firebaseFirestore.addDoc(
-                    window.firebaseFirestore.collection(window.firebase.db, 'conversations', conversationId, 'messages'),
-                    {
-                        senderId: currentUser.uid,
-                        receiverId: receiverId,
-                        text: messageText.trim(),
-                        timestamp: window.firebaseFirestore.serverTimestamp()
-                    }
+                    window.firebaseFirestore.collection(window.firebase.db, 'users', currentUser.uid, 'conversations', partnerId, 'messages'),
+                    messageData
                 );
                 
-                // Update conversation's last message and timestamp
+                // Save message to receiver's conversation
+                await window.firebaseFirestore.addDoc(
+                    window.firebaseFirestore.collection(window.firebase.db, 'users', partnerId, 'conversations', currentUser.uid, 'messages'),
+                    messageData
+                );
+                
+                // Update last message in sender's conversation
                 await window.firebaseFirestore.updateDoc(
-                    window.firebaseFirestore.doc(window.firebase.db, 'conversations', conversationId),
+                    window.firebaseFirestore.doc(window.firebase.db, 'users', currentUser.uid, 'conversations', partnerId),
                     {
                         lastMessage: messageText.trim(),
-                        lastUpdated: window.firebaseFirestore.serverTimestamp()
+                        lastUpdated: timestamp
                     }
                 );
+                
+                // Update last message in receiver's conversation and increment unread count
+                const receiverConversationRef = window.firebaseFirestore.doc(window.firebase.db, 'users', partnerId, 'conversations', currentUser.uid);
+                const receiverConversationDoc = await window.firebaseFirestore.getDoc(receiverConversationRef);
+                
+                if (receiverConversationDoc.exists()) {
+                    const currentUnreadCount = receiverConversationDoc.data().unreadCount || 0;
+                    await window.firebaseFirestore.updateDoc(receiverConversationRef, {
+                        lastMessage: messageText.trim(),
+                        lastUpdated: timestamp,
+                        unreadCount: currentUnreadCount + 1
+                    });
+                }
                 
                 return true;
             } catch (error) {
@@ -2195,5 +2235,5 @@
             });
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'95e9499d82ad0886',t:'MTc1MjQxNTAyNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'95e9570673a3d32f',t:'MTc1MjQxNTU3Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
