@@ -1544,6 +1544,7 @@
             }
             
             try {
+                // Query ALL messages in the chat room (not filtered by senderId)
                 const messagesQuery = window.firebaseFirestore.query(
                     window.firebaseFirestore.collection(window.firebase.db, 'chats', chatId, 'messages'),
                     window.firebaseFirestore.orderBy('timestamp', 'asc')
@@ -1563,14 +1564,17 @@
                         return;
                     }
                     
+                    // Process all messages from both users
                     snapshot.forEach((doc) => {
                         const messageData = doc.data();
                         const messageElement = createMessageElement(messageData);
                         messagesContainer.appendChild(messageElement);
                     });
                     
-                    // Scroll to bottom
-                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    // Scroll to bottom to show latest messages
+                    setTimeout(() => {
+                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    }, 100);
                 });
             } catch (error) {
                 console.error('Error loading messages:', error);
@@ -1590,12 +1594,13 @@
             const isOwnMessage = messageData.senderId === currentUser.uid;
             const timestamp = messageData.timestamp ? getTimeAgo(messageData.timestamp.toDate()) : 'Sending...';
             
-            messageDiv.className = `flex ${isOwnMessage ? 'justify-end' : 'justify-start'} chat-message`;
+            // Proper alignment: right for own messages, left for others
+            messageDiv.className = `flex ${isOwnMessage ? 'justify-end' : 'justify-start'} chat-message mb-4`;
             
             messageDiv.innerHTML = `
-                <div class="max-w-xs lg:max-w-md">
-                    <div class="${isOwnMessage ? 'bg-uni-blue text-white' : 'bg-gray-200 text-gray-800'} rounded-lg px-4 py-2">
-                        <p class="text-sm">${messageData.text}</p>
+                <div class="max-w-xs lg:max-w-md ${isOwnMessage ? 'text-right' : 'text-left'}">
+                    <div class="${isOwnMessage ? 'bg-uni-blue text-white ml-auto' : 'bg-gray-200 text-gray-800 mr-auto'} rounded-lg px-4 py-2 inline-block">
+                        <p class="text-sm break-words">${messageData.text}</p>
                     </div>
                     <p class="text-xs text-gray-500 mt-1 ${isOwnMessage ? 'text-right' : 'text-left'}">${timestamp}</p>
                 </div>
@@ -2178,5 +2183,5 @@
             });
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'95e937b904b19bae',t:'MTc1MjQxNDI5NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'95e9421d65b80886',t:'MTc1MjQxNDcxOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
