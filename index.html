@@ -5,1294 +5,465 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UniBuddy - University Skill Sharing</title>
+    <title>UniBuddy - Connect & Exchange Skills</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'uni-blue': '#1e40af',
+                        'uni-purple': '#7c3aed',
+                        'uni-pink': '#ec4899'
+                    }
+                }
+            }
+        }
+    </script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-storage-compat.js"></script>
-    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
         .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .card-hover { transition: all 0.3s ease; }
-        .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        .bottom-nav { box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
-        .chat-bubble { max-width: 80%; word-wrap: break-word; }
         .skill-tag { background: linear-gradient(45deg, #667eea, #764ba2); }
-        .token-glow { box-shadow: 0 0 20px rgba(102, 126, 234, 0.3); }
-        .notification-dot { animation: pulse 2s infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        .file-upload-area { border: 2px dashed #d1d5db; transition: all 0.3s ease; }
-        .file-upload-area:hover { border-color: #667eea; background-color: #f8faff; }
-        .rating-star { cursor: pointer; transition: color 0.2s ease; }
-        .rating-star:hover { color: #fbbf24; }
-        .rating-star.active { color: #fbbf24; }
+        .post-card { transition: all 0.3s ease; }
+        .post-card:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .notification-badge { animation: pulse 2s infinite; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
-    <!-- Login/Register View -->
-    <div id="authView" class="min-h-screen flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl p-6 shadow-lg w-full max-w-md">
-            <div class="text-center mb-6">
-                <div class="w-16 h-16 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span class="text-white font-bold text-2xl">UB</span>
+    <!-- Desktop/Tablet Sidebar -->
+    <div class="fixed left-0 top-0 h-full bg-white border-r border-gray-200 z-40 hidden md:flex flex-col w-16 lg:w-64 transition-all duration-300">
+        <!-- Logo -->
+        <div class="p-4 border-b border-gray-200">
+            <div class="flex items-center">
+                <div class="w-8 h-8 gradient-bg rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                    UB
                 </div>
-                <h1 class="text-2xl font-bold text-gray-800">Welcome to UniBuddy</h1>
-                <p class="text-gray-600">Connect with fellow students for skill sharing</p>
+                <span class="ml-3 font-bold text-xl text-gray-800 hidden lg:block">UniBuddy</span>
             </div>
-
-            <!-- Login Form -->
-            <div id="loginForm">
-                <form id="loginFormElement" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">University Email</label>
-                        <input type="email" id="loginEmail" placeholder="your.email@university.edu" required 
-                               class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
-                        <input type="password" id="loginPassword" required 
-                               class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                    </div>
-                    <button type="submit" class="w-full gradient-bg text-white py-3 rounded-lg font-semibold">
-                        Sign In
-                    </button>
-                </form>
-                <p class="text-center mt-4 text-sm text-gray-600">
-                    Don't have an account? 
-                    <button onclick="showRegisterForm()" class="text-purple-600 font-medium">Sign up</button>
-                </p>
-            </div>
-
-            <!-- Register Form -->
-            <div id="registerForm" class="hidden">
-                <form id="registerFormElement" class="space-y-4">
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">First Name</label>
-                            <input type="text" id="firstName" required 
-                                   class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
-                            <input type="text" id="lastName" required 
-                                   class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">University Email</label>
-                        <input type="email" id="registerEmail" placeholder="your.email@university.edu" required 
-                               class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
-                        <input type="password" id="registerPassword" required minlength="6"
-                               class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Faculty</label>
-                            <select id="faculty" required 
-                                    class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                                <option value="">Select Faculty</option>
-                                <option value="Computer Science">Computer Science</option>
-                                <option value="Engineering">Engineering</option>
-                                <option value="Business">Business</option>
-                                <option value="Arts">Arts</option>
-                                <option value="Science">Science</option>
-                                <option value="Medicine">Medicine</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Year</label>
-                            <select id="year" required 
-                                    class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                                <option value="">Year</option>
-                                <option value="1">Year 1</option>
-                                <option value="2">Year 2</option>
-                                <option value="3">Year 3</option>
-                                <option value="4">Year 4</option>
-                                <option value="Graduate">Graduate</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Skills You Offer (comma separated)</label>
-                        <input type="text" id="skillsOffered" placeholder="React, Python, Design, Writing..." 
-                               class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                    </div>
-                    <button type="submit" class="w-full gradient-bg text-white py-3 rounded-lg font-semibold">
-                        Create Account
-                    </button>
-                </form>
-                <p class="text-center mt-4 text-sm text-gray-600">
-                    Already have an account? 
-                    <button onclick="showLoginForm()" class="text-purple-600 font-medium">Sign in</button>
-                </p>
+        </div>
+        
+        <!-- Navigation -->
+        <nav class="flex-1 p-4">
+            <ul class="space-y-2">
+                <li>
+                    <a href="#" class="nav-item active flex items-center p-3 rounded-lg bg-gradient-to-r from-uni-blue to-uni-purple text-white">
+                        <i class="fas fa-home text-lg"></i>
+                        <span class="ml-3 hidden lg:block">Home</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="nav-item flex items-center p-3 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
+                        <i class="fas fa-search text-lg"></i>
+                        <span class="ml-3 hidden lg:block">Explore</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="nav-item flex items-center p-3 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
+                        <i class="fas fa-plus-circle text-lg"></i>
+                        <span class="ml-3 hidden lg:block">Create Post</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="nav-item flex items-center p-3 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors relative">
+                        <i class="fas fa-comments text-lg"></i>
+                        <span class="ml-3 hidden lg:block">Messages</span>
+                        <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center notification-badge">3</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="nav-item flex items-center p-3 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
+                        <i class="fas fa-file-alt text-lg"></i>
+                        <span class="ml-3 hidden lg:block">My Posts</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="nav-item flex items-center p-3 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
+                        <i class="fas fa-user text-lg"></i>
+                        <span class="ml-3 hidden lg:block">Profile</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        
+        <!-- User Profile -->
+        <div class="p-4 border-t border-gray-200 hidden lg:block">
+            <div class="flex items-center">
+                <div class="w-10 h-10 bg-gradient-to-r from-uni-pink to-uni-purple rounded-full flex items-center justify-center text-white font-semibold">
+                    JS
+                </div>
+                <div class="ml-3">
+                    <p class="font-semibold text-gray-800">John Smith</p>
+                    <p class="text-sm text-gray-500">Computer Science</p>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Main App -->
-    <div id="mainApp" class="hidden">
-        <!-- Header -->
-        <header class="gradient-bg text-white p-4 sticky top-0 z-50">
-            <div class="flex items-center justify-between max-w-md mx-auto">
-                <div class="flex items-center space-x-3">
-                    <div class="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-                        <span class="text-purple-600 font-bold text-sm">UB</span>
-                    </div>
-                    <h1 class="text-xl font-bold">UniBuddy</h1>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <div class="token-glow bg-white/20 px-3 py-1 rounded-full flex items-center space-x-1">
-                        <i class="fas fa-coins text-yellow-300"></i>
-                        <span class="text-sm font-semibold" id="tokenBalance">10</span>
-                    </div>
-                    <button onclick="showNotifications()" class="relative">
-                        <i class="fas fa-bell text-xl"></i>
-                        <span id="notificationBadge" class="absolute -top-1 -right-1 bg-red-500 text-xs rounded-full w-5 h-5 flex items-center justify-center notification-dot hidden">0</span>
-                    </button>
-                </div>
-            </div>
-        </header>
+    <!-- Mobile Bottom Navigation -->
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 md:hidden">
+        <div class="flex justify-around items-center h-16">
+            <a href="#" class="flex flex-col items-center p-2 text-uni-blue">
+                <i class="fas fa-home text-xl"></i>
+                <span class="text-xs mt-1">Home</span>
+            </a>
+            <a href="#" class="flex flex-col items-center p-2 text-gray-500">
+                <i class="fas fa-search text-xl"></i>
+                <span class="text-xs mt-1">Search</span>
+            </a>
+            <a href="#" class="flex flex-col items-center p-2 text-gray-500">
+                <i class="fas fa-plus-circle text-xl"></i>
+                <span class="text-xs mt-1">Create</span>
+            </a>
+            <a href="#" class="flex flex-col items-center p-2 text-gray-500 relative">
+                <i class="fas fa-comments text-xl"></i>
+                <span class="text-xs mt-1">Messages</span>
+                <span class="absolute top-0 right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center notification-badge">3</span>
+            </a>
+            <a href="#" class="flex flex-col items-center p-2 text-gray-500">
+                <i class="fas fa-user text-xl"></i>
+                <span class="text-xs mt-1">Profile</span>
+            </a>
+        </div>
+    </div>
 
-        <!-- Main Content -->
-        <main class="max-w-md mx-auto pb-20">
-            <!-- Dashboard View -->
-            <div id="dashboardView" class="p-4 space-y-6">
-                <!-- Welcome Section -->
-                <div class="bg-white rounded-xl p-4 shadow-sm">
-                    <div class="flex items-center space-x-3 mb-3">
-                        <div id="userAvatar" class="w-12 h-12 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center">
-                            <span class="text-white font-bold" id="userInitials">U</span>
-                        </div>
-                        <div>
-                            <h2 class="font-semibold text-gray-800" id="welcomeMessage">Welcome back!</h2>
-                            <p class="text-sm text-gray-600" id="userInfo">Loading...</p>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="bg-blue-50 p-3 rounded-lg text-center">
-                            <div class="text-2xl font-bold text-blue-600" id="tasksHelped">0</div>
-                            <div class="text-xs text-gray-600">Tasks Helped</div>
-                        </div>
-                        <div class="bg-green-50 p-3 rounded-lg text-center">
-                            <div class="text-2xl font-bold text-green-600" id="tasksPosted">0</div>
-                            <div class="text-xs text-gray-600">Tasks Posted</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Quick Actions -->
-                <div class="grid grid-cols-2 gap-3">
-                    <button onclick="showCreateRequest()" class="gradient-bg text-white p-4 rounded-xl text-center card-hover">
-                        <i class="fas fa-plus text-2xl mb-2"></i>
-                        <div class="font-semibold">Post Request</div>
-                        <div class="text-xs opacity-90">Need help?</div>
-                    </button>
-                    <button onclick="showMarketplace()" class="bg-white border-2 border-purple-200 text-purple-600 p-4 rounded-xl text-center card-hover">
-                        <i class="fas fa-hands-helping text-2xl mb-2"></i>
-                        <div class="font-semibold">Help Others</div>
-                        <div class="text-xs opacity-70">Earn tokens</div>
-                    </button>
-                </div>
-
-                <!-- Recent Requests -->
-                <div class="bg-white rounded-xl p-4 shadow-sm">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="font-semibold text-gray-800">Latest Requests</h3>
-                        <button onclick="showMarketplace()" class="text-purple-600 text-sm">View All</button>
-                    </div>
-                    <div id="recentRequests" class="space-y-3">
-                        <!-- Dynamic content loaded here -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- Create Request View -->
-            <div id="createRequestView" class="hidden p-4">
-                <div class="bg-white rounded-xl p-4 shadow-sm">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4">Post a Help Request</h2>
-                    <form id="createRequestForm" class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">What do you need help with?</label>
-                            <input type="text" id="requestTitle" placeholder="e.g., Design a presentation slide deck" required
-                                   class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                            <textarea id="requestDescription" placeholder="Provide more details about what you need..." rows="4" required
-                                      class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"></textarea>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
-                            <select id="requestCategory" required 
-                                    class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                                <option value="">Select category</option>
-                                <option value="code">💻 Code & Programming</option>
-                                <option value="design">📊 Presentation & Design</option>
-                                <option value="writing">✍️ Writing & Proofreading</option>
-                                <option value="research">📚 Research & Analysis</option>
-                                <option value="creative">🎨 Creative & Arts</option>
-                                <option value="other">🔧 Other</option>
-                            </select>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Deadline</label>
-                                <input type="date" id="requestDeadline" required
-                                       class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Tokens Offered</label>
-                                <input type="number" id="tokensOffered" placeholder="0" min="0" 
-                                       class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                            </div>
-                        </div>
-
-                        <!-- File Upload -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Attach Files (Optional)</label>
-                            <div class="file-upload-area p-6 rounded-lg text-center">
-                                <input type="file" id="fileUpload" multiple accept=".pdf,.doc,.docx,.jpg,.png,.zip" class="hidden">
-                                <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
-                                <p class="text-sm text-gray-600">Click to upload files or drag and drop</p>
-                                <button type="button" onclick="document.getElementById('fileUpload').click()" 
-                                        class="mt-2 bg-purple-100 text-purple-600 px-4 py-2 rounded-lg text-sm">
-                                    Choose Files
-                                </button>
-                            </div>
-                            <div id="uploadedFiles" class="mt-2 space-y-1"></div>
-                        </div>
-
-                        <div class="flex items-center space-x-2">
-                            <input type="checkbox" id="freeHelp" class="rounded">
-                            <label for="freeHelp" class="text-sm text-gray-600">This is a free help request</label>
-                        </div>
-
-                        <button type="submit" class="w-full gradient-bg text-white py-3 rounded-lg font-semibold">
-                            Post Request
-                        </button>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Marketplace View -->
-            <div id="marketplaceView" class="hidden p-4">
-                <div class="mb-4">
-                    <h2 class="text-xl font-bold text-gray-800 mb-3">Help Marketplace</h2>
-                    
-                    <!-- Search Bar -->
-                    <div class="relative mb-4">
-                        <input type="text" id="searchInput" placeholder="Search requests..." 
-                               class="w-full p-3 pl-10 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                        <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                    </div>
-                    
-                    <!-- Filter Tabs -->
-                    <div class="flex space-x-2 mb-4 overflow-x-auto">
-                        <button onclick="filterRequests('all')" class="filter-btn bg-purple-600 text-white px-4 py-2 rounded-full text-sm whitespace-nowrap">All</button>
-                        <button onclick="filterRequests('code')" class="filter-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-full text-sm whitespace-nowrap">💻 Code</button>
-                        <button onclick="filterRequests('design')" class="filter-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-full text-sm whitespace-nowrap">📊 Design</button>
-                        <button onclick="filterRequests('writing')" class="filter-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-full text-sm whitespace-nowrap">✍️ Writing</button>
-                        <button onclick="filterRequests('research')" class="filter-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-full text-sm whitespace-nowrap">📚 Research</button>
-                    </div>
-
-                    <!-- Sort Options -->
-                    <div class="flex items-center justify-between mb-4">
-                        <span class="text-sm text-gray-600">Sort by:</span>
-                        <select id="sortSelect" onchange="sortRequests()" 
-                                class="p-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                            <option value="latest">Latest</option>
-                            <option value="deadline">Deadline</option>
-                            <option value="tokens">Tokens (High to Low)</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Request Cards -->
-                <div id="requestsList" class="space-y-4">
-                    <!-- Dynamic content loaded here -->
-                </div>
-            </div>
-
-            <!-- My Tasks View -->
-            <div id="myTasksView" class="hidden p-4">
-                <h2 class="text-xl font-bold text-gray-800 mb-4">My Tasks</h2>
-                
-                <!-- Task Tabs -->
-                <div class="flex space-x-1 mb-4 bg-gray-100 p-1 rounded-lg">
-                    <button onclick="showTaskTab('posted')" id="postedTab" class="flex-1 py-2 px-3 rounded-md text-sm font-medium bg-white text-purple-600 shadow-sm">Posted</button>
-                    <button onclick="showTaskTab('helping')" id="helpingTab" class="flex-1 py-2 px-3 rounded-md text-sm font-medium text-gray-600">Helping</button>
-                    <button onclick="showTaskTab('history')" id="historyTab" class="flex-1 py-2 px-3 rounded-md text-sm font-medium text-gray-600">History</button>
-                </div>
-
-                <!-- Posted Tasks -->
-                <div id="postedTasks" class="space-y-4">
-                    <!-- Dynamic content loaded here -->
-                </div>
-
-                <!-- Helping Tasks -->
-                <div id="helpingTasks" class="hidden space-y-4">
-                    <!-- Dynamic content loaded here -->
-                </div>
-
-                <!-- History -->
-                <div id="historyTasks" class="hidden space-y-4">
-                    <!-- Dynamic content loaded here -->
-                </div>
-            </div>
-
-            <!-- Profile View -->
-            <div id="profileView" class="hidden p-4">
-                <div class="bg-white rounded-xl p-6 shadow-sm mb-4">
-                    <div class="text-center mb-6">
-                        <div id="profileAvatar" class="w-20 h-20 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center mx-auto mb-3">
-                            <span class="text-white font-bold text-2xl" id="profileInitials">U</span>
-                        </div>
-                        <h2 class="text-xl font-bold text-gray-800" id="profileName">User Name</h2>
-                        <p class="text-gray-600" id="profileFaculty">Faculty • Year</p>
-                        <p class="text-sm text-gray-500" id="profileEmail">email@university.edu</p>
-                        
-                        <!-- Copy Profile Link -->
-                        <button onclick="copyProfileLink()" class="mt-2 bg-purple-100 text-purple-600 px-4 py-2 rounded-lg text-sm">
-                            <i class="fas fa-link mr-1"></i>Copy Profile Link
-                        </button>
-                    </div>
-
-                    <div class="grid grid-cols-3 gap-4 mb-6">
-                        <div class="text-center">
-                            <div class="text-2xl font-bold text-purple-600" id="profileRating">0.0</div>
-                            <div class="text-xs text-gray-600">Rating</div>
-                        </div>
-                        <div class="text-center">
-                            <div class="text-2xl font-bold text-blue-600" id="profileHelped">0</div>
-                            <div class="text-xs text-gray-600">Helped</div>
-                        </div>
-                        <div class="text-center">
-                            <div class="text-2xl font-bold text-green-600" id="profileRequested">0</div>
-                            <div class="text-xs text-gray-600">Requested</div>
-                        </div>
-                    </div>
-
+    <!-- Main Content -->
+    <div class="md:ml-16 lg:ml-64 min-h-screen pb-20 md:pb-0">
+        <div class="max-w-6xl mx-auto px-4 py-6">
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <!-- Main Feed -->
+                <div class="lg:col-span-3">
+                    <!-- Header -->
                     <div class="mb-6">
-                        <h3 class="font-semibold text-gray-800 mb-3">Skills I Offer</h3>
-                        <div id="profileSkills" class="flex flex-wrap gap-2">
-                            <!-- Dynamic skills loaded here -->
+                        <h1 class="text-2xl font-bold text-gray-800 mb-2">Welcome back, John! 👋</h1>
+                        <p class="text-gray-600">Discover new skill exchange opportunities</p>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="bg-white rounded-xl p-6 mb-6 shadow-sm border border-gray-100">
+                        <h2 class="font-semibold text-gray-800 mb-4">Quick Actions</h2>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            <button class="p-4 bg-gradient-to-r from-uni-blue to-uni-purple text-white rounded-lg hover:shadow-lg transition-all">
+                                <i class="fas fa-plus-circle text-2xl mb-2"></i>
+                                <p class="font-medium">Need Help</p>
+                            </button>
+                            <button class="p-4 bg-gradient-to-r from-uni-purple to-uni-pink text-white rounded-lg hover:shadow-lg transition-all">
+                                <i class="fas fa-hands-helping text-2xl mb-2"></i>
+                                <p class="font-medium">Offer Help</p>
+                            </button>
+                            <button class="p-4 bg-gradient-to-r from-uni-pink to-red-400 text-white rounded-lg hover:shadow-lg transition-all">
+                                <i class="fas fa-search text-2xl mb-2"></i>
+                                <p class="font-medium">Browse</p>
+                            </button>
                         </div>
                     </div>
 
-                    <!-- Recent Reviews -->
-                    <div class="mb-6">
-                        <h3 class="font-semibold text-gray-800 mb-3">Recent Reviews</h3>
-                        <div id="profileReviews" class="space-y-3">
-                            <!-- Dynamic reviews loaded here -->
+                    <!-- Feed Posts -->
+                    <div class="space-y-6">
+                        <!-- Post 1 -->
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-100 post-card">
+                            <div class="p-6">
+                                <div class="flex items-center mb-4">
+                                    <div class="w-12 h-12 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
+                                        AM
+                                    </div>
+                                    <div class="ml-3">
+                                        <h3 class="font-semibold text-gray-800">Anna Martinez</h3>
+                                        <p class="text-sm text-gray-500">Business Administration • 2 hours ago</p>
+                                    </div>
+                                    <div class="ml-auto">
+                                        <span class="bg-red-100 text-red-600 px-3 py-1 rounded-full text-sm font-medium">Need Help</span>
+                                    </div>
+                                </div>
+                                
+                                <h4 class="text-lg font-semibold text-gray-800 mb-2">Need help with Python programming assignment</h4>
+                                <p class="text-gray-600 mb-4">I'm struggling with a data analysis project using pandas and matplotlib. Looking for someone who can guide me through the basics and help debug my code.</p>
+                                
+                                <div class="flex flex-wrap gap-2 mb-4">
+                                    <span class="skill-tag text-white px-3 py-1 rounded-full text-sm">Python</span>
+                                    <span class="skill-tag text-white px-3 py-1 rounded-full text-sm">Data Analysis</span>
+                                    <span class="skill-tag text-white px-3 py-1 rounded-full text-sm">Pandas</span>
+                                </div>
+                                
+                                <div class="bg-green-50 p-3 rounded-lg mb-4">
+                                    <p class="text-sm text-green-700"><strong>Offering in return:</strong> Marketing strategy consultation, Business plan review</p>
+                                </div>
+                                
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-4">
+                                        <button class="flex items-center text-gray-500 hover:text-uni-blue transition-colors">
+                                            <i class="fas fa-heart mr-2"></i>
+                                            <span>12</span>
+                                        </button>
+                                        <button class="flex items-center text-gray-500 hover:text-uni-blue transition-colors">
+                                            <i class="fas fa-comment mr-2"></i>
+                                            <span>5</span>
+                                        </button>
+                                    </div>
+                                    <button class="bg-uni-blue text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                                        Help Out
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Post 2 -->
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-100 post-card">
+                            <div class="p-6">
+                                <div class="flex items-center mb-4">
+                                    <div class="w-12 h-12 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full flex items-center justify-center text-white font-semibold">
+                                        MK
+                                    </div>
+                                    <div class="ml-3">
+                                        <h3 class="font-semibold text-gray-800">Mike Kim</h3>
+                                        <p class="text-sm text-gray-500">Computer Science • 4 hours ago</p>
+                                    </div>
+                                    <div class="ml-auto">
+                                        <span class="bg-green-100 text-green-600 px-3 py-1 rounded-full text-sm font-medium">Offering Help</span>
+                                    </div>
+                                </div>
+                                
+                                <h4 class="text-lg font-semibold text-gray-800 mb-2">Free web development tutoring sessions</h4>
+                                <p class="text-gray-600 mb-4">I'm offering free 1-on-1 tutoring for HTML, CSS, JavaScript, and React. Perfect for beginners or anyone looking to improve their frontend skills.</p>
+                                
+                                <div class="flex flex-wrap gap-2 mb-4">
+                                    <span class="skill-tag text-white px-3 py-1 rounded-full text-sm">HTML/CSS</span>
+                                    <span class="skill-tag text-white px-3 py-1 rounded-full text-sm">JavaScript</span>
+                                    <span class="skill-tag text-white px-3 py-1 rounded-full text-sm">React</span>
+                                </div>
+                                
+                                <div class="bg-blue-50 p-3 rounded-lg mb-4">
+                                    <p class="text-sm text-blue-700"><strong>Looking for in return:</strong> Help with calculus homework, Study buddy for math</p>
+                                </div>
+                                
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-4">
+                                        <button class="flex items-center text-gray-500 hover:text-uni-blue transition-colors">
+                                            <i class="fas fa-heart mr-2"></i>
+                                            <span>24</span>
+                                        </button>
+                                        <button class="flex items-center text-gray-500 hover:text-uni-blue transition-colors">
+                                            <i class="fas fa-comment mr-2"></i>
+                                            <span>8</span>
+                                        </button>
+                                    </div>
+                                    <button class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                                        Connect
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Post 3 -->
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-100 post-card">
+                            <div class="p-6">
+                                <div class="flex items-center mb-4">
+                                    <div class="w-12 h-12 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white font-semibold">
+                                        SL
+                                    </div>
+                                    <div class="ml-3">
+                                        <h3 class="font-semibold text-gray-800">Sarah Lee</h3>
+                                        <p class="text-sm text-gray-500">Graphic Design • 6 hours ago</p>
+                                    </div>
+                                    <div class="ml-auto">
+                                        <span class="bg-red-100 text-red-600 px-3 py-1 rounded-full text-sm font-medium">Need Help</span>
+                                    </div>
+                                </div>
+                                
+                                <h4 class="text-lg font-semibold text-gray-800 mb-2">Need statistics help for research project</h4>
+                                <p class="text-gray-600 mb-4">Working on my final year project and need help with statistical analysis using SPSS. Looking for someone who can explain hypothesis testing and regression analysis.</p>
+                                
+                                <div class="flex flex-wrap gap-2 mb-4">
+                                    <span class="skill-tag text-white px-3 py-1 rounded-full text-sm">Statistics</span>
+                                    <span class="skill-tag text-white px-3 py-1 rounded-full text-sm">SPSS</span>
+                                    <span class="skill-tag text-white px-3 py-1 rounded-full text-sm">Research</span>
+                                </div>
+                                
+                                <div class="bg-green-50 p-3 rounded-lg mb-4">
+                                    <p class="text-sm text-green-700"><strong>Offering in return:</strong> Logo design, Poster creation, Adobe Creative Suite tutorials</p>
+                                </div>
+                                
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-4">
+                                        <button class="flex items-center text-gray-500 hover:text-uni-blue transition-colors">
+                                            <i class="fas fa-heart mr-2"></i>
+                                            <span>7</span>
+                                        </button>
+                                        <button class="flex items-center text-gray-500 hover:text-uni-blue transition-colors">
+                                            <i class="fas fa-comment mr-2"></i>
+                                            <span>3</span>
+                                        </button>
+                                    </div>
+                                    <button class="bg-uni-blue text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                                        Help Out
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Sidebar (Desktop only) -->
+                <div class="hidden lg:block">
+                    <!-- Suggestions -->
+                    <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100 mb-6">
+                        <h3 class="font-semibold text-gray-800 mb-4">Suggested Connections</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-gradient-to-r from-indigo-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                                    JD
+                                </div>
+                                <div class="ml-3 flex-1">
+                                    <p class="font-medium text-gray-800 text-sm">Jane Doe</p>
+                                    <p class="text-xs text-gray-500">Mathematics</p>
+                                </div>
+                                <button class="text-uni-blue text-sm font-medium hover:underline">Follow</button>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-gradient-to-r from-green-400 to-teal-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                                    RJ
+                                </div>
+                                <div class="ml-3 flex-1">
+                                    <p class="font-medium text-gray-800 text-sm">Robert Johnson</p>
+                                    <p class="text-xs text-gray-500">Engineering</p>
+                                </div>
+                                <button class="text-uni-blue text-sm font-medium hover:underline">Follow</button>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="space-y-3">
-                        <button onclick="showEditProfile()" class="w-full bg-gray-100 text-gray-700 py-3 rounded-lg font-medium">
-                            <i class="fas fa-edit mr-2"></i>Edit Profile
-                        </button>
-                        <button onclick="signOut()" class="w-full bg-red-50 text-red-600 py-3 rounded-lg font-medium">
-                            <i class="fas fa-sign-out-alt mr-2"></i>Sign Out
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Notifications View -->
-            <div id="notificationsView" class="hidden p-4">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-xl font-bold text-gray-800">Notifications</h2>
-                    <button onclick="markAllNotificationsRead()" class="text-purple-600 text-sm">Mark All Read</button>
-                </div>
-                <div id="notificationsList" class="space-y-3">
-                    <!-- Dynamic notifications loaded here -->
-                </div>
-            </div>
-
-            <!-- Chat View -->
-            <div id="chatView" class="hidden">
-                <div class="bg-white border-b p-4 flex items-center space-x-3">
-                    <button onclick="closeChatView()" class="text-gray-600">
-                        <i class="fas fa-arrow-left"></i>
-                    </button>
-                    <div id="chatAvatar" class="w-10 h-10 bg-blue-400 rounded-full flex items-center justify-center">
-                        <span class="text-white font-semibold" id="chatInitials">U</span>
-                    </div>
-                    <div>
-                        <h3 class="font-semibold text-gray-800" id="chatUserName">User Name</h3>
-                        <p class="text-sm text-gray-600" id="chatTaskTitle">Task Title</p>
-                    </div>
-                    <div class="ml-auto">
-                        <button onclick="showTaskActions()" class="text-gray-600">
-                            <i class="fas fa-ellipsis-v"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <div id="chatMessages" class="p-4 space-y-4 h-96 overflow-y-auto">
-                    <!-- Dynamic messages loaded here -->
-                </div>
-
-                <!-- File Upload in Chat -->
-                <div id="chatFileUpload" class="hidden p-4 bg-gray-50 border-t">
-                    <input type="file" id="chatFile" accept=".pdf,.doc,.docx,.jpg,.png,.zip">
-                    <button onclick="sendFile()" class="ml-2 bg-purple-600 text-white px-4 py-2 rounded-lg text-sm">
-                        Send File
-                    </button>
-                </div>
-
-                <div class="p-4 border-t bg-white">
-                    <div class="flex space-x-2">
-                        <button onclick="toggleFileUpload()" class="text-gray-600 p-2">
-                            <i class="fas fa-paperclip"></i>
-                        </button>
-                        <input type="text" id="messageInput" placeholder="Type a message..." 
-                               class="flex-1 p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                        <button onclick="sendMessage()" class="bg-purple-600 text-white px-4 py-3 rounded-lg">
-                            <i class="fas fa-paper-plane"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Task Actions Modal -->
-            <div id="taskActionsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div class="bg-white rounded-xl p-6 m-4 w-full max-w-sm">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Task Actions</h3>
-                    <div class="space-y-3">
-                        <button onclick="markTaskComplete()" class="w-full bg-green-600 text-white py-3 rounded-lg font-medium">
-                            <i class="fas fa-check mr-2"></i>Mark as Complete
-                        </button>
-                        <button onclick="submitWork()" class="w-full bg-blue-600 text-white py-3 rounded-lg font-medium">
-                            <i class="fas fa-upload mr-2"></i>Submit Work
-                        </button>
-                        <button onclick="reportIssue()" class="w-full bg-red-600 text-white py-3 rounded-lg font-medium">
-                            <i class="fas fa-exclamation-triangle mr-2"></i>Report Issue
-                        </button>
-                        <button onclick="closeTaskActions()" class="w-full bg-gray-200 text-gray-700 py-3 rounded-lg font-medium">
-                            Cancel
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Rating Modal -->
-            <div id="ratingModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div class="bg-white rounded-xl p-6 m-4 w-full max-w-sm">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Rate & Review</h3>
-                    <div class="text-center mb-4">
-                        <div class="flex justify-center space-x-1 mb-3">
-                            <i class="fas fa-star rating-star text-gray-300 text-2xl" data-rating="1"></i>
-                            <i class="fas fa-star rating-star text-gray-300 text-2xl" data-rating="2"></i>
-                            <i class="fas fa-star rating-star text-gray-300 text-2xl" data-rating="3"></i>
-                            <i class="fas fa-star rating-star text-gray-300 text-2xl" data-rating="4"></i>
-                            <i class="fas fa-star rating-star text-gray-300 text-2xl" data-rating="5"></i>
+                    <!-- Popular Skills -->
+                    <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                        <h3 class="font-semibold text-gray-800 mb-4">Trending Skills</h3>
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">Python Programming</span>
+                                <span class="text-xs text-gray-400">24 posts</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">Graphic Design</span>
+                                <span class="text-xs text-gray-400">18 posts</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">Mathematics</span>
+                                <span class="text-xs text-gray-400">15 posts</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">Web Development</span>
+                                <span class="text-xs text-gray-400">12 posts</span>
+                            </div>
                         </div>
-                        <p class="text-sm text-gray-600">Tap to rate</p>
-                    </div>
-                    <textarea id="reviewText" placeholder="Write a review (optional)..." rows="3" 
-                              class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent mb-4"></textarea>
-                    <div class="flex space-x-3">
-                        <button onclick="submitRating()" class="flex-1 bg-purple-600 text-white py-3 rounded-lg font-medium">
-                            Submit
-                        </button>
-                        <button onclick="closeRatingModal()" class="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-medium">
-                            Cancel
-                        </button>
                     </div>
                 </div>
             </div>
-        </main>
-
-        <!-- Bottom Navigation -->
-        <nav class="bottom-nav fixed bottom-0 left-0 right-0 bg-white border-t">
-            <div class="max-w-md mx-auto flex">
-                <button onclick="showView('dashboard')" id="navHome" class="flex-1 py-3 text-center text-purple-600">
-                    <i class="fas fa-home text-xl mb-1 block"></i>
-                    <span class="text-xs">Home</span>
-                </button>
-                <button onclick="showView('myTasks')" id="navTasks" class="flex-1 py-3 text-center text-gray-400">
-                    <i class="fas fa-tasks text-xl mb-1 block"></i>
-                    <span class="text-xs">My Tasks</span>
-                </button>
-                <button onclick="showView('marketplace')" id="navMarketplace" class="flex-1 py-3 text-center text-gray-400">
-                    <i class="fas fa-store text-xl mb-1 block"></i>
-                    <span class="text-xs">Marketplace</span>
-                </button>
-                <button onclick="showNotifications()" id="navNotifications" class="flex-1 py-3 text-center text-gray-400 relative">
-                    <i class="fas fa-bell text-xl mb-1 block"></i>
-                    <span class="text-xs">Notifications</span>
-                </button>
-                <button onclick="showView('profile')" id="navProfile" class="flex-1 py-3 text-center text-gray-400">
-                    <i class="fas fa-user text-xl mb-1 block"></i>
-                    <span class="text-xs">Profile</span>
-                </button>
-            </div>
-        </nav>
+        </div>
     </div>
 
     <script>
-        // Firebase Configuration (Demo - Replace with your config)
-        const firebaseConfig = {
-            // Your Firebase config would go here
-            // This is a demo implementation
-        };
-
-        // Initialize Firebase (Demo mode)
-        let db, auth, storage;
-        let currentUser = null;
-        let currentChatId = null;
-        let selectedRating = 0;
-
-        // Demo data for offline functionality
-        let demoRequests = [
-            {
-                id: '1',
-                title: 'Help with React Component Design',
-                description: 'Need help creating a responsive navbar component with dropdown menus.',
-                category: 'code',
-                tokensOffered: 15,
-                deadline: '2024-01-15',
-                status: 'open',
-                authorId: 'user2',
-                authorName: 'Maya Chen',
-                authorFaculty: 'Computer Science',
-                authorYear: '2',
-                createdAt: new Date('2024-01-10')
-            },
-            {
-                id: '2',
-                title: 'Proofread Marketing Essay',
-                description: '2000-word essay about digital marketing strategies. Need grammar check.',
-                category: 'writing',
-                tokensOffered: 20,
-                deadline: '2024-01-18',
-                status: 'open',
-                authorId: 'user3',
-                authorName: 'Sarah Johnson',
-                authorFaculty: 'Business',
-                authorYear: '1',
-                createdAt: new Date('2024-01-11')
-            }
-        ];
-
-        let demoUser = {
-            uid: 'currentUser',
-            firstName: 'Alex',
-            lastName: 'Smith',
-            email: 'alex.smith@university.edu',
-            faculty: 'Computer Science',
-            year: '3',
-            skillsOffered: ['React.js', 'Python', 'UI/UX Design', 'Data Analysis'],
-            tokenBalance: 125,
-            tasksHelped: 12,
-            tasksPosted: 8,
-            rating: 4.8,
-            reviews: [
-                { rating: 5, comment: 'Great help with my Python project!', author: 'John Doe' },
-                { rating: 4, comment: 'Quick and professional assistance.', author: 'Jane Smith' }
-            ]
-        };
-
-        // Authentication Functions
-        function showLoginForm() {
-            document.getElementById('loginForm').classList.remove('hidden');
-            document.getElementById('registerForm').classList.add('hidden');
-        }
-
-        function showRegisterForm() {
-            document.getElementById('loginForm').classList.add('hidden');
-            document.getElementById('registerForm').classList.remove('hidden');
-        }
-
-        function signIn(email, password) {
-            // Demo authentication
-            if (email.includes('@university.edu') || email.includes('@.edu')) {
-                currentUser = demoUser;
-                showMainApp();
-                loadUserData();
-                return true;
-            }
-            return false;
-        }
-
-        function signUp(userData) {
-            // Demo registration
-            if (userData.email.includes('@university.edu') || userData.email.includes('@.edu')) {
-                currentUser = {
-                    ...demoUser,
-                    ...userData,
-                    uid: 'newUser_' + Date.now(),
-                    tokenBalance: 10, // Starting tokens
-                    tasksHelped: 0,
-                    tasksPosted: 0,
-                    rating: 0,
-                    reviews: []
-                };
-                showMainApp();
-                loadUserData();
-                return true;
-            }
-            return false;
-        }
-
-        function signOut() {
-            currentUser = null;
-            document.getElementById('mainApp').classList.add('hidden');
-            document.getElementById('authView').classList.remove('hidden');
-        }
-
-        function showMainApp() {
-            document.getElementById('authView').classList.add('hidden');
-            document.getElementById('mainApp').classList.remove('hidden');
-        }
-
-        // Form Handlers
-        document.getElementById('loginFormElement').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
-            
-            if (signIn(email, password)) {
-                showNotification('Welcome back!', 'success');
-            } else {
-                showNotification('Invalid credentials or non-university email', 'error');
-            }
-        });
-
-        document.getElementById('registerFormElement').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const userData = {
-                firstName: document.getElementById('firstName').value,
-                lastName: document.getElementById('lastName').value,
-                email: document.getElementById('registerEmail').value,
-                faculty: document.getElementById('faculty').value,
-                year: document.getElementById('year').value,
-                skillsOffered: document.getElementById('skillsOffered').value.split(',').map(s => s.trim()).filter(s => s)
-            };
-            
-            if (signUp(userData)) {
-                showNotification('Account created successfully!', 'success');
-            } else {
-                showNotification('Please use a valid university email', 'error');
-            }
-        });
-
-        document.getElementById('createRequestForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const requestData = {
-                id: 'req_' + Date.now(),
-                title: document.getElementById('requestTitle').value,
-                description: document.getElementById('requestDescription').value,
-                category: document.getElementById('requestCategory').value,
-                deadline: document.getElementById('requestDeadline').value,
-                tokensOffered: parseInt(document.getElementById('tokensOffered').value) || 0,
-                isFree: document.getElementById('freeHelp').checked,
-                status: 'open',
-                authorId: currentUser.uid,
-                authorName: currentUser.firstName + ' ' + currentUser.lastName,
-                authorFaculty: currentUser.faculty,
-                authorYear: currentUser.year,
-                createdAt: new Date()
-            };
-
-            // Add to demo data
-            demoRequests.unshift(requestData);
-            
-            // Update user stats
-            currentUser.tasksPosted++;
-            
-            showNotification('Request posted successfully!', 'success');
-            showView('dashboard');
-            loadRecentRequests();
-            
-            // Reset form
-            document.getElementById('createRequestForm').reset();
-        });
-
-        // View Management
-        function showView(viewName) {
-            const views = ['dashboardView', 'createRequestView', 'marketplaceView', 'myTasksView', 'profileView', 'notificationsView'];
-            views.forEach(view => {
-                document.getElementById(view).classList.add('hidden');
-            });
-
-            document.getElementById(viewName + 'View').classList.remove('hidden');
-
-            // Update navigation
-            const navButtons = ['navHome', 'navTasks', 'navMarketplace', 'navNotifications', 'navProfile'];
-            navButtons.forEach(btn => {
-                document.getElementById(btn).classList.remove('text-purple-600');
-                document.getElementById(btn).classList.add('text-gray-400');
-            });
-
-            const navMap = {
-                'dashboard': 'navHome',
-                'myTasks': 'navTasks',
-                'marketplace': 'navMarketplace',
-                'notifications': 'navNotifications',
-                'profile': 'navProfile'
-            };
-
-            if (navMap[viewName]) {
-                document.getElementById(navMap[viewName]).classList.remove('text-gray-400');
-                document.getElementById(navMap[viewName]).classList.add('text-purple-600');
-            }
-
-            // Load data for specific views
-            if (viewName === 'marketplace') {
-                loadMarketplaceRequests();
-            } else if (viewName === 'myTasks') {
-                loadMyTasks();
-            } else if (viewName === 'profile') {
-                loadProfile();
-            } else if (viewName === 'notifications') {
-                loadNotifications();
-            }
-        }
-
-        function showCreateRequest() {
-            showView('createRequest');
-        }
-
-        function showMarketplace() {
-            showView('marketplace');
-        }
-
-        function showNotifications() {
-            showView('notifications');
-        }
-
-        // Data Loading Functions
-        function loadUserData() {
-            if (!currentUser) return;
-
-            // Update header
-            document.getElementById('tokenBalance').textContent = currentUser.tokenBalance;
-            document.getElementById('userInitials').textContent = getInitials(currentUser.firstName + ' ' + currentUser.lastName);
-            document.getElementById('welcomeMessage').textContent = `Welcome back, ${currentUser.firstName}!`;
-            document.getElementById('userInfo').textContent = `${currentUser.faculty} • Year ${currentUser.year}`;
-            document.getElementById('tasksHelped').textContent = currentUser.tasksHelped;
-            document.getElementById('tasksPosted').textContent = currentUser.tasksPosted;
-
-            loadRecentRequests();
-        }
-
-        function loadRecentRequests() {
-            const container = document.getElementById('recentRequests');
-            const recentRequests = demoRequests.slice(0, 3);
-            
-            container.innerHTML = recentRequests.map(request => `
-                <div class="border border-gray-100 rounded-lg p-3 card-hover cursor-pointer" onclick="showRequestDetails('${request.id}')">
-                    <div class="flex items-start justify-between mb-2">
-                        <h4 class="font-medium text-gray-800 text-sm">${request.title}</h4>
-                        <span class="skill-tag text-white text-xs px-2 py-1 rounded-full">${getCategoryIcon(request.category)}</span>
-                    </div>
-                    <p class="text-xs text-gray-600 mb-2">${request.description.substring(0, 60)}...</p>
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-2">
-                            <div class="w-6 h-6 bg-blue-400 rounded-full flex items-center justify-center">
-                                <span class="text-white text-xs">${getInitials(request.authorName)}</span>
-                            </div>
-                            <span class="text-xs text-gray-600">${request.authorName} • ${request.authorFaculty} Year ${request.authorYear}</span>
-                        </div>
-                        <div class="flex items-center space-x-1">
-                            ${request.tokensOffered > 0 ? 
-                                `<i class="fas fa-coins text-yellow-500 text-xs"></i><span class="text-xs font-semibold">${request.tokensOffered}</span>` :
-                                `<i class="fas fa-heart text-red-500 text-xs"></i><span class="text-xs font-semibold">Free</span>`
-                            }
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function loadMarketplaceRequests() {
-            const container = document.getElementById('requestsList');
-            const requests = demoRequests.filter(req => req.authorId !== currentUser.uid);
-            
-            container.innerHTML = requests.map(request => `
-                <div class="bg-white rounded-xl p-4 shadow-sm card-hover cursor-pointer" onclick="showRequestDetails('${request.id}')">
-                    <div class="flex items-start justify-between mb-3">
-                        <div class="flex-1">
-                            <h3 class="font-semibold text-gray-800 mb-1">${request.title}</h3>
-                            <p class="text-sm text-gray-600 mb-2">${request.description}</p>
-                        </div>
-                        <span class="skill-tag text-white text-xs px-2 py-1 rounded-full ml-2">${getCategoryIcon(request.category)}</span>
-                    </div>
-                    
-                    <div class="flex items-center justify-between mb-3">
-                        <div class="flex items-center space-x-2">
-                            <div class="w-8 h-8 bg-blue-400 rounded-full flex items-center justify-center">
-                                <span class="text-white text-sm">${getInitials(request.authorName)}</span>
-                            </div>
-                            <div>
-                                <div class="text-sm font-medium text-gray-800">${request.authorName}</div>
-                                <div class="text-xs text-gray-500">${request.authorFaculty} • Year ${request.authorYear}</div>
-                            </div>
-                        </div>
-                        <div class="text-right">
-                            <div class="flex items-center space-x-1 mb-1">
-                                ${request.tokensOffered > 0 ? 
-                                    `<i class="fas fa-coins text-yellow-500"></i><span class="font-semibold text-gray-800">${request.tokensOffered} tokens</span>` :
-                                    `<i class="fas fa-heart text-red-500"></i><span class="font-semibold text-gray-800">Free Help</span>`
-                                }
-                            </div>
-                            <div class="text-xs text-gray-500">Due: ${formatDate(request.deadline)}</div>
-                        </div>
-                    </div>
-                    
-                    <button onclick="applyToHelp('${request.id}')" class="w-full bg-purple-600 text-white py-2 rounded-lg font-medium text-sm">
-                        Apply to Help
-                    </button>
-                </div>
-            `).join('');
-        }
-
-        function loadMyTasks() {
-            // Load posted tasks
-            const postedContainer = document.getElementById('postedTasks');
-            const postedTasks = demoRequests.filter(req => req.authorId === currentUser.uid);
-            
-            postedContainer.innerHTML = postedTasks.map(task => `
-                <div class="bg-white rounded-xl p-4 shadow-sm">
-                    <div class="flex items-start justify-between mb-3">
-                        <div class="flex-1">
-                            <h3 class="font-semibold text-gray-800 mb-1">${task.title}</h3>
-                            <p class="text-sm text-gray-600">${task.description.substring(0, 80)}...</p>
-                        </div>
-                        <span class="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">${task.status.toUpperCase()}</span>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <div class="text-sm text-gray-600">0 applications received</div>
-                        <button class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm">
-                            View Applications
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function loadProfile() {
-            if (!currentUser) return;
-
-            document.getElementById('profileInitials').textContent = getInitials(currentUser.firstName + ' ' + currentUser.lastName);
-            document.getElementById('profileName').textContent = currentUser.firstName + ' ' + currentUser.lastName;
-            document.getElementById('profileFaculty').textContent = `${currentUser.faculty} • Year ${currentUser.year}`;
-            document.getElementById('profileEmail').textContent = currentUser.email;
-            document.getElementById('profileRating').textContent = currentUser.rating.toFixed(1);
-            document.getElementById('profileHelped').textContent = currentUser.tasksHelped;
-            document.getElementById('profileRequested').textContent = currentUser.tasksPosted;
-
-            // Load skills
-            const skillsContainer = document.getElementById('profileSkills');
-            skillsContainer.innerHTML = currentUser.skillsOffered.map(skill => 
-                `<span class="skill-tag text-white px-3 py-1 rounded-full text-sm">${skill}</span>`
-            ).join('');
-
-            // Load reviews
-            const reviewsContainer = document.getElementById('profileReviews');
-            reviewsContainer.innerHTML = currentUser.reviews.map(review => `
-                <div class="bg-gray-50 p-3 rounded-lg">
-                    <div class="flex items-center justify-between mb-2">
-                        <div class="flex items-center space-x-1">
-                            ${Array(review.rating).fill().map(() => '<i class="fas fa-star text-yellow-400 text-xs"></i>').join('')}
-                        </div>
-                        <span class="text-xs text-gray-500">${review.author}</span>
-                    </div>
-                    <p class="text-sm text-gray-700">${review.comment}</p>
-                </div>
-            `).join('');
-        }
-
-        function loadNotifications() {
-            const container = document.getElementById('notificationsList');
-            const notifications = [
-                {
-                    id: '1',
-                    type: 'offer',
-                    title: 'New Help Offer',
-                    message: 'Maya Chen offered to help with your React project',
-                    time: '2 hours ago',
-                    read: false
-                },
-                {
-                    id: '2',
-                    type: 'deadline',
-                    title: 'Deadline Reminder',
-                    message: 'Your Python script task is due tomorrow',
-                    time: '1 day ago',
-                    read: false
-                },
-                {
-                    id: '3',
-                    type: 'review',
-                    title: 'New Review',
-                    message: 'You received a 5-star review from John Doe',
-                    time: '3 days ago',
-                    read: true
-                }
-            ];
-
-            container.innerHTML = notifications.map(notification => `
-                <div class="bg-white rounded-lg p-4 shadow-sm ${!notification.read ? 'border-l-4 border-purple-500' : ''}">
-                    <div class="flex items-start space-x-3">
-                        <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                            <i class="fas ${getNotificationIcon(notification.type)} text-purple-600"></i>
-                        </div>
-                        <div class="flex-1">
-                            <h4 class="font-medium text-gray-800 text-sm">${notification.title}</h4>
-                            <p class="text-sm text-gray-600 mt-1">${notification.message}</p>
-                            <span class="text-xs text-gray-500 mt-2 block">${notification.time}</span>
-                        </div>
-                        ${!notification.read ? '<div class="w-2 h-2 bg-purple-500 rounded-full"></div>' : ''}
-                    </div>
-                </div>
-            `).join('');
-
-            // Update notification badge
-            const unreadCount = notifications.filter(n => !n.read).length;
-            const badge = document.getElementById('notificationBadge');
-            if (unreadCount > 0) {
-                badge.textContent = unreadCount;
-                badge.classList.remove('hidden');
-            } else {
-                badge.classList.add('hidden');
-            }
-        }
-
-        // Chat Functions
-        function openChat(taskId, userId) {
-            currentChatId = taskId;
-            document.getElementById('chatView').classList.remove('hidden');
-            document.getElementById('myTasksView').classList.add('hidden');
-            
-            // Load chat data
-            loadChatMessages();
-        }
-
-        function closeChatView() {
-            document.getElementById('chatView').classList.add('hidden');
-            document.getElementById('myTasksView').classList.remove('hidden');
-        }
-
-        function loadChatMessages() {
-            const container = document.getElementById('chatMessages');
-            const messages = [
-                {
-                    id: '1',
-                    senderId: 'user2',
-                    senderName: 'David Kim',
-                    message: 'Hi! I can help you with your Python script. Can you share the error message?',
-                    timestamp: new Date('2024-01-10T14:30:00'),
-                    type: 'text'
-                },
-                {
-                    id: '2',
-                    senderId: currentUser.uid,
-                    senderName: currentUser.firstName + ' ' + currentUser.lastName,
-                    message: 'Sure! I\'m getting a KeyError when trying to access a column.',
-                    timestamp: new Date('2024-01-10T14:32:00'),
-                    type: 'text'
-                }
-            ];
-
-            container.innerHTML = messages.map(message => `
-                <div class="flex ${message.senderId === currentUser.uid ? 'justify-end' : 'justify-start'}">
-                    <div class="chat-bubble ${message.senderId === currentUser.uid ? 'bg-purple-600 text-white' : 'bg-gray-100'} p-3 rounded-lg">
-                        <p class="text-sm">${message.message}</p>
-                        <span class="text-xs ${message.senderId === currentUser.uid ? 'text-purple-200' : 'text-gray-500'}">${formatTime(message.timestamp)}</span>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function sendMessage() {
-            const input = document.getElementById('messageInput');
-            const message = input.value.trim();
-            
-            if (message) {
-                // Add message to chat
-                const container = document.getElementById('chatMessages');
-                const messageElement = document.createElement('div');
-                messageElement.className = 'flex justify-end';
-                messageElement.innerHTML = `
-                    <div class="chat-bubble bg-purple-600 text-white p-3 rounded-lg">
-                        <p class="text-sm">${message}</p>
-                        <span class="text-xs text-purple-200">${formatTime(new Date())}</span>
-                    </div>
-                `;
-                container.appendChild(messageElement);
-                container.scrollTop = container.scrollHeight;
+        // Navigation functionality
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
                 
-                input.value = '';
-            }
-        }
-
-        // Task Actions
-        function showTaskActions() {
-            document.getElementById('taskActionsModal').classList.remove('hidden');
-        }
-
-        function closeTaskActions() {
-            document.getElementById('taskActionsModal').classList.add('hidden');
-        }
-
-        function markTaskComplete() {
-            closeTaskActions();
-            document.getElementById('ratingModal').classList.remove('hidden');
-        }
-
-        function submitWork() {
-            closeTaskActions();
-            showNotification('Work submitted successfully!', 'success');
-        }
-
-        function reportIssue() {
-            closeTaskActions();
-            showNotification('Issue reported. Our team will review it.', 'info');
-        }
-
-        // Rating System
-        function initializeRatingStars() {
-            const stars = document.querySelectorAll('.rating-star');
-            stars.forEach(star => {
-                star.addEventListener('click', function() {
-                    selectedRating = parseInt(this.dataset.rating);
-                    updateStarDisplay();
+                // Remove active class from all items
+                document.querySelectorAll('.nav-item').forEach(nav => {
+                    nav.classList.remove('active', 'bg-gradient-to-r', 'from-uni-blue', 'to-uni-purple', 'text-white');
+                    nav.classList.add('text-gray-600');
                 });
+                
+                // Add active class to clicked item
+                this.classList.add('active', 'bg-gradient-to-r', 'from-uni-blue', 'to-uni-purple', 'text-white');
+                this.classList.remove('text-gray-600');
             });
-        }
+        });
 
-        function updateStarDisplay() {
-            const stars = document.querySelectorAll('.rating-star');
-            stars.forEach((star, index) => {
-                if (index < selectedRating) {
-                    star.classList.add('active');
+        // Mobile bottom navigation
+        document.querySelectorAll('.fixed.bottom-0 a').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Remove active class from all mobile nav items
+                document.querySelectorAll('.fixed.bottom-0 a').forEach(nav => {
+                    nav.classList.remove('text-uni-blue');
+                    nav.classList.add('text-gray-500');
+                });
+                
+                // Add active class to clicked item
+                this.classList.add('text-uni-blue');
+                this.classList.remove('text-gray-500');
+            });
+        });
+
+        // Like button functionality
+        document.querySelectorAll('.fa-heart').forEach(heart => {
+            heart.parentElement.addEventListener('click', function(e) {
+                e.preventDefault();
+                const icon = this.querySelector('.fa-heart');
+                const count = this.querySelector('span');
+                
+                if (icon.classList.contains('fas')) {
+                    icon.classList.remove('fas', 'text-red-500');
+                    icon.classList.add('far', 'text-gray-500');
+                    count.textContent = parseInt(count.textContent) - 1;
                 } else {
-                    star.classList.remove('active');
+                    icon.classList.remove('far', 'text-gray-500');
+                    icon.classList.add('fas', 'text-red-500');
+                    count.textContent = parseInt(count.textContent) + 1;
                 }
             });
-        }
-
-        function submitRating() {
-            if (selectedRating === 0) {
-                showNotification('Please select a rating', 'error');
-                return;
-            }
-
-            const reviewText = document.getElementById('reviewText').value;
-            
-            // Update user tokens and stats
-            currentUser.tokenBalance += 25; // Reward for completing task
-            currentUser.tasksHelped++;
-            
-            showNotification(`Rating submitted! You earned 25 tokens.`, 'success');
-            closeRatingModal();
-            
-            // Update UI
-            document.getElementById('tokenBalance').textContent = currentUser.tokenBalance;
-            document.getElementById('tasksHelped').textContent = currentUser.tasksHelped;
-        }
-
-        function closeRatingModal() {
-            document.getElementById('ratingModal').classList.add('hidden');
-            selectedRating = 0;
-            updateStarDisplay();
-            document.getElementById('reviewText').value = '';
-        }
-
-        // Utility Functions
-        function applyToHelp(requestId) {
-            showNotification('Application sent! The requester will be notified.', 'success');
-        }
-
-        function showRequestDetails(requestId) {
-            console.log('Showing details for request:', requestId);
-        }
-
-        function filterRequests(category) {
-            const buttons = document.querySelectorAll('.filter-btn');
-            buttons.forEach(btn => {
-                btn.classList.remove('bg-purple-600', 'text-white');
-                btn.classList.add('bg-gray-200', 'text-gray-700');
-            });
-            
-            event.target.classList.remove('bg-gray-200', 'text-gray-700');
-            event.target.classList.add('bg-purple-600', 'text-white');
-            
-            loadMarketplaceRequests(); // Reload with filter
-        }
-
-        function sortRequests() {
-            loadMarketplaceRequests(); // Reload with sort
-        }
-
-        function showTaskTab(tabName) {
-            document.getElementById('postedTasks').classList.add('hidden');
-            document.getElementById('helpingTasks').classList.add('hidden');
-            document.getElementById('historyTasks').classList.add('hidden');
-
-            document.getElementById(tabName + 'Tasks').classList.remove('hidden');
-
-            const tabs = ['postedTab', 'helpingTab', 'historyTab'];
-            tabs.forEach(tab => {
-                document.getElementById(tab).classList.remove('bg-white', 'text-purple-600', 'shadow-sm');
-                document.getElementById(tab).classList.add('text-gray-600');
-            });
-
-            const tabMap = {
-                'posted': 'postedTab',
-                'helping': 'helpingTab',
-                'history': 'historyTab'
-            };
-
-            document.getElementById(tabMap[tabName]).classList.add('bg-white', 'text-purple-600', 'shadow-sm');
-            document.getElementById(tabMap[tabName]).classList.remove('text-gray-600');
-        }
-
-        function copyProfileLink() {
-            const profileUrl = `${window.location.origin}/profile/${currentUser.uid}`;
-            navigator.clipboard.writeText(profileUrl).then(() => {
-                showNotification('Profile link copied!', 'success');
-            });
-        }
-
-        function markAllNotificationsRead() {
-            showNotification('All notifications marked as read', 'success');
-            loadNotifications();
-        }
-
-        function toggleFileUpload() {
-            const fileUpload = document.getElementById('chatFileUpload');
-            fileUpload.classList.toggle('hidden');
-        }
-
-        function sendFile() {
-            const fileInput = document.getElementById('chatFile');
-            if (fileInput.files.length > 0) {
-                showNotification('File sent successfully!', 'success');
-                toggleFileUpload();
-                fileInput.value = '';
-            }
-        }
-
-        function showNotification(message, type = 'info') {
-            // Create notification element
-            const notification = document.createElement('div');
-            notification.className = `fixed top-20 left-1/2 transform -translate-x-1/2 z-50 px-4 py-2 rounded-lg text-white text-sm font-medium ${
-                type === 'success' ? 'bg-green-500' : 
-                type === 'error' ? 'bg-red-500' : 
-                'bg-blue-500'
-            }`;
-            notification.textContent = message;
-            
-            document.body.appendChild(notification);
-            
-            // Remove after 3 seconds
-            setTimeout(() => {
-                notification.remove();
-            }, 3000);
-        }
-
-        function getInitials(name) {
-            return name.split(' ').map(n => n[0]).join('').toUpperCase();
-        }
-
-        function getCategoryIcon(category) {
-            const icons = {
-                'code': '💻 Code',
-                'design': '📊 Design',
-                'writing': '✍️ Writing',
-                'research': '📚 Research',
-                'creative': '🎨 Creative',
-                'other': '🔧 Other'
-            };
-            return icons[category] || '🔧 Other';
-        }
-
-        function getNotificationIcon(type) {
-            const icons = {
-                'offer': 'fa-hand-holding-heart',
-                'deadline': 'fa-clock',
-                'review': 'fa-star',
-                'message': 'fa-comment'
-            };
-            return icons[type] || 'fa-bell';
-        }
-
-        function formatDate(dateString) {
-            const date = new Date(dateString);
-            const today = new Date();
-            const diffTime = date - today;
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            
-            if (diffDays === 0) return 'Today';
-            if (diffDays === 1) return 'Tomorrow';
-            if (diffDays > 1) return `${diffDays} days`;
-            return 'Overdue';
-        }
-
-        function formatTime(date) {
-            return date.toLocaleTimeString('en-US', { 
-                hour: 'numeric', 
-                minute: '2-digit',
-                hour12: true 
-            });
-        }
-
-        // File Upload Handler
-        document.getElementById('fileUpload').addEventListener('change', function(e) {
-            const files = e.target.files;
-            const container = document.getElementById('uploadedFiles');
-            
-            container.innerHTML = '';
-            Array.from(files).forEach(file => {
-                const fileElement = document.createElement('div');
-                fileElement.className = 'flex items-center justify-between bg-gray-100 p-2 rounded text-sm';
-                fileElement.innerHTML = `
-                    <span><i class="fas fa-file mr-2"></i>${file.name}</span>
-                    <span class="text-gray-500">${(file.size / 1024).toFixed(1)} KB</span>
-                `;
-                container.appendChild(fileElement);
-            });
         });
 
-        // Message input enter key handler
-        document.getElementById('messageInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                sendMessage();
+        // Action buttons functionality
+        document.querySelectorAll('button').forEach(button => {
+            if (button.textContent.includes('Help Out') || button.textContent.includes('Connect')) {
+                button.addEventListener('click', function() {
+                    const originalText = this.textContent;
+                    this.textContent = 'Connecting...';
+                    this.disabled = true;
+                    
+                    setTimeout(() => {
+                        this.textContent = 'Message Sent!';
+                        this.classList.remove('bg-uni-blue', 'bg-green-600');
+                        this.classList.add('bg-green-500');
+                        
+                        setTimeout(() => {
+                            this.textContent = originalText;
+                            this.disabled = false;
+                            this.classList.remove('bg-green-500');
+                            if (originalText.includes('Help Out')) {
+                                this.classList.add('bg-uni-blue');
+                            } else {
+                                this.classList.add('bg-green-600');
+                            }
+                        }, 2000);
+                    }, 1000);
+                });
             }
         });
 
-        // Initialize app
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeRatingStars();
-            
-            // Set minimum date for deadline to today
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('requestDeadline').setAttribute('min', today);
-            
-            // Check if user is already logged in (demo)
-            if (currentUser) {
-                showMainApp();
-                loadUserData();
-                showView('dashboard');
+        // Quick action buttons
+        document.querySelectorAll('.grid button').forEach(button => {
+            button.addEventListener('click', function() {
+                const action = this.querySelector('p').textContent;
+                alert(`${action} feature coming soon! This will open a form to ${action.toLowerCase()}.`);
+            });
+        });
+
+        // Follow buttons
+        document.querySelectorAll('button').forEach(button => {
+            if (button.textContent === 'Follow') {
+                button.addEventListener('click', function() {
+                    this.textContent = 'Following';
+                    this.classList.remove('text-uni-blue');
+                    this.classList.add('text-green-600');
+                });
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'95e17979f514ce9b',t:'MTc1MjMzMzEwMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'95e6f770372f2ca3',t:'MTc1MjM5MDY4OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
