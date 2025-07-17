@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -198,12 +197,12 @@
         </div>
     </div>
 
-    <!-- Main App (Hidden until authenticated) -->
+<!-- Main App (Hidden until authenticated) -->
     <div id="main-app" class="auth-required">
         <!-- Desktop/Tablet Sidebar -->
-        <div class="fixed left-0 top-0 h-full bg-white border-r border-gray-200 z-40 hidden md:flex flex-col w-16 lg:w-64 transition-all duration-300">
+        <div class="fixed left-0 top-0 h-full bg-white border-r border-gray-200 z-40 hidden md:flex flex-col w-16 lg:w-64 transition-all duration-300 ">
             <!-- Logo -->
-            <div class="p-4 border-b border-gray-200">
+            <div class="p-4 border-b border-gray-200 flex justify-center lg:justify-start">
                 <div class="flex items-center">
                     <div class="w-8 h-8 gradient-bg rounded-lg flex items-center justify-center text-white font-bold text-sm">
                         UB
@@ -213,54 +212,54 @@
             </div>
             
             <!-- Navigation -->
-            <nav class="flex-1 p-4">
+            <nav class="flex-1 p-2">
                 <ul class="space-y-2">
                     <li>
-                        <a href="#" data-page="home" class="nav-item active flex items-center p-3 rounded-lg bg-gradient-to-r from-uni-blue to-uni-purple text-white">
+                        <a href="#" data-page="home" class="nav-item active flex items-center justify-center lg:justify-start p-3 rounded-lg bg-gradient-to-r from-uni-blue to-uni-purple text-white">
                             <i class="fas fa-home text-lg"></i>
                             <span class="ml-3 hidden lg:block">Home</span>
                         </a>
                     </li>
                     <li>
-                        <a href="#" data-page="explore" class="nav-item flex items-center p-3 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
+                        <a href="#" data-page="explore" class="nav-item flex items-center justify-center lg:justify-start p-3 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
                             <i class="fas fa-search text-lg"></i>
                             <span class="ml-3 hidden lg:block">Explore</span>
                         </a>
                     </li>
                     <li>
-                        <a href="#" data-page="create" class="nav-item flex items-center p-3 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
+                        <a href="#" data-page="create" class="nav-item flex items-center justify-center lg:justify-start p-3 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
                             <i class="fas fa-plus-circle text-lg"></i>
                             <span class="ml-3 hidden lg:block">Create Post</span>
                         </a>
                     </li>
                     <li>
-                        <a href="#" data-page="messages" class="nav-item flex items-center p-3 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors relative">
+                        <a href="#" data-page="messages" class="nav-item flex items-center justify-center lg:justify-start p-3 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors relative">
                             <i class="fas fa-comments text-lg"></i>
                             <span class="ml-3 hidden lg:block">Messages</span>
                             <span id="message-badge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center notification-badge hidden">0</span>
                         </a>
                     </li>
                     <li>
-                        <a href="#" data-page="myposts" class="nav-item flex items-center p-3 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
+                        <a href="#" data-page="myposts" class="nav-item flex items-center justify-center lg:justify-start p-3 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
                             <i class="fas fa-file-alt text-lg"></i>
                             <span class="ml-3 hidden lg:block">My Posts</span>
                         </a>
                     </li>
                     <li>
-                        <a href="#" data-page="profile" class="nav-item flex items-center p-3 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
+                        <a href="#" data-page="profile" class="nav-item flex items-center justify-center lg:justify-start p-3 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
                             <i class="fas fa-user text-lg"></i>
                             <span class="ml-3 hidden lg:block">Profile</span>
                         </a>
                     </li>
                     <li>
-                        <a href="#" data-page="dashboard" class="nav-item flex items-center p-3 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
+                        <a href="#" data-page="dashboard" class="nav-item flex items-center justify-center lg:justify-start p-3 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
                             <i class="fas fa-chart-bar text-lg"></i>
                             <span class="ml-3 hidden lg:block">Dashboard</span>
                         </a>
                     </li>
                 </ul>
-            </nav>
-            
+            </nav> 
+
             <!-- User Profile -->
             <div class="p-4 border-t border-gray-200 hidden lg:block">
                 <div class="flex items-center">
@@ -519,7 +518,7 @@
 
             <!-- MESSAGES PAGE -->
             <div id="messages-page" class="page">
-                <div class="max-w-6xl mx-auto px-4 py-6 h-screen flex flex-col">
+                <div class="max-w-6xl mx-auto px-4 py-6 flex flex-col">
                     <!-- Desktop Header -->
                     <div class="mb-6 hidden lg:block">
                         <h1 class="text-2xl font-bold text-gray-800 mb-2">Messages</h1>
@@ -550,7 +549,7 @@
 
                     <div class="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0">
                         <!-- Chat List -->
-                        <div id="conversations-panel" class="lg:col-span-1 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col h-[calc(100vh-200px)] lg:h-[calc(100vh-200px)]">
+                        <div id="conversations-panel" class="lg:col-span-1 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col flex-grow">
                             <div class="p-4 border-b border-gray-200 flex-shrink-0 hidden lg:block">
                                 <h3 class="font-semibold text-gray-800">Conversations</h3>
                             </div>
@@ -591,7 +590,7 @@
                                         <i class="fas fa-paperclip"></i>
                                     </button>
                                     <input type="text" id="message-input" placeholder="Type your message..." 
-                                           class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uni-blue focus:border-transparent">
+                                        class="flex-1 max-w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uni-blue focus:border-transparent">
                                     <button type="submit" class="bg-uni-blue text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
                                         <i class="fas fa-paper-plane"></i>
                                     </button>
@@ -616,7 +615,8 @@
                                         <i class="fas fa-paperclip"></i>
                                     </button>
                                     <input type="text" id="mobile-message-input" placeholder="Type your message..." 
-                                           class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uni-blue focus:border-transparent">
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uni-blue focus:border-transparent">
+
                                     <button type="submit" class="bg-uni-blue text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
                                         <i class="fas fa-paper-plane"></i>
                                     </button>
